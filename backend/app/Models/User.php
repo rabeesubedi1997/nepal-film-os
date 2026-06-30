@@ -28,6 +28,7 @@ class User extends Authenticatable
         'preferred_language',
         'timezone',
         'is_active',
+        'is_super_admin',
         'last_login_at',
         'password',
     ];
@@ -53,6 +54,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'is_super_admin' => 'boolean',
             'last_login_at' => 'datetime',
         ];
     }

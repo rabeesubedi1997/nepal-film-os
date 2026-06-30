@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
         // ── Users ──────────────────────────────────────────────────
         $admin = User::updateOrCreate(
             ['email' => 'admin@nepalfilmos.com'],
-            ['name' => 'Suresh Sharma (Admin)', 'password' => Hash::make('password'), 'is_active' => true]
+            ['name' => 'Suresh Sharma (Admin)', 'password' => Hash::make('password'), 'is_active' => true, 'is_super_admin' => true]
         );
         $director = User::updateOrCreate(
             ['email' => 'director@nepalfilmos.com'],

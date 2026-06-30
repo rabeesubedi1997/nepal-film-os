@@ -9,6 +9,7 @@ use App\Models\FilmUser;
 use App\Models\SubscriptionPlan;
 use App\Models\FilmSubscription;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class SuperAdminController extends Controller
 {
@@ -23,7 +24,7 @@ class SuperAdminController extends Controller
             'total_films' => $totalFilms,
             'active_films' => $activeFilms,
             'total_users' => $totalUsers,
-            'total_film_users' => $totalFilmUsers,
+            'film_users' => $totalFilmUsers,
         ]);
     }
 
@@ -120,7 +121,7 @@ class SuperAdminController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
-            'role' => 'nullable|string',
+            'is_super_admin' => 'nullable|boolean',
         ]);
 
         $user = User::create([
@@ -128,6 +129,7 @@ class SuperAdminController extends Controller
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']),
             'is_active' => true,
+            'is_super_admin' => $validated['is_super_admin'] ?? false,
         ]);
 
         return response()->json($user, 201);
@@ -139,15 +141,16 @@ class SuperAdminController extends Controller
 
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
-            'email' => 'nullable|email|unique:users,email,' . $id,
+            'email' => ['nullable', 'email', Rule::unique('users', 'email')->ignore($id)],
             'password' => 'nullable|string|min:8',
-            'role' => 'nullable|string',
+            'is_super_admin' => 'nullable|boolean',
         ]);
 
         $data = [];
         if (isset($validated['name'])) $data['name'] = $validated['name'];
         if (isset($validated['email'])) $data['email'] = $validated['email'];
         if (!empty($validated['password'])) $data['password'] = bcrypt($validated['password']);
+        if (isset($validated['is_super_admin'])) $data['is_super_admin'] = $validated['is_super_admin'];
 
         $user->update($data);
 
