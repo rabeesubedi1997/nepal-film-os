@@ -1,0 +1,14 @@
+/vendor/
+/node_modules/
+/storage/framework/cache/data/
+/storage/framework/sessions/
+/storage/framework/views/
+/storage/logs/*
+/storage/debugbar/*
+/storage/*.key
+!storage/framework/.gitkeep
+!storage/logs/.gitkeep
+.env
+/public/hot
+/public/build/
+/public/storage
