@@ -1,0 +1,41 @@
+# PHP
+backend/.env
+backend/.env.*
+backend/vendor/
+backend/storage/framework/cache/data/
+backend/storage/framework/sessions/
+backend/storage/framework/views/
+backend/storage/logs/*
+backend/storage/debugbar/*
+backend/storage/*.key
+!backend/storage/framework/.gitkeep
+!backend/storage/logs/.gitkeep
+backend/node_modules/
+backend/public/hot
+backend/public/build/
+backend/public/storage
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.*
+
+# Node
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Deployment
+nepal-film-os.zip
+deploy/
+*.sql

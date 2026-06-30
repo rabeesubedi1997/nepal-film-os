@@ -1,0 +1,233 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@theme {
+  --color-brand-50:  #fefbeb;
+  --color-brand-100: #fdf6c7;
+  --color-brand-200: #fbe88a;
+  --color-brand-300: #fad34d;
+  --color-brand-400: #f9be1a;
+  --color-brand-500: #e2a309;
+  --color-brand-600: #c48006;
+  --color-brand-700: #9e5d07;
+  --color-brand-800: #81490b;
+  --color-brand-900: #6a3c0f;
+  --color-brand-950: #3e1f04;
+  --color-slate-850: #151e2e;
+  --color-slate-950: #0b0f19;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  border-color: rgb(30 41 59);
+}
+
+html { -webkit-text-size-adjust: 100%; tab-size: 4; }
+
+body {
+  background-color: #0b0f19;
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  min-height: 100vh;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+input, textarea, select, button { font-family: inherit; }
+
+/* ── Animations ───────────────────────────── */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 0.3s ease both; }
+
+/* ── Custom scrollbar ──────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* ── Card ──────────────────────────────────── */
+.card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #1e293b;
+}
+
+/* ── Stat card ─────────────────────────────── */
+.stat-card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+/* ── Table ─────────────────────────────────── */
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.8125rem; }
+.data-table th {
+  text-align: left;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  border-bottom: 1px solid #1e293b;
+}
+.data-table td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+  color: #cbd5e1;
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+/* ── Input ─────────────────────────────────── */
+.input-field {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  color: #e2e8f0;
+  font-size: 0.8125rem;
+  transition: border-color 0.15s;
+  outline: none;
+}
+.input-field::placeholder { color: #475569; }
+.input-field:focus { border-color: #e2a309; }
+select.input-field { cursor: pointer; }
+
+/* ── Button ────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-sm { padding: 0.375rem 0.75rem; font-size: 0.75rem; }
+.btn-primary { background: #e2a309; color: #0b0f19; border-color: #e2a309; }
+.btn-primary:hover { background: #f9be1a; }
+.btn-secondary { background: #1e293b; color: #cbd5e1; border-color: #334155; }
+.btn-secondary:hover { background: #334155; }
+.btn-ghost { background: transparent; color: #64748b; border-color: transparent; }
+.btn-ghost:hover { background: rgba(255,255,255,0.04); color: #e2e8f0; }
+.btn-danger { background: transparent; color: #f87171; border-color: transparent; }
+.btn-danger:hover { background: rgba(239,68,68,0.08); }
+
+/* ── Badge ─────────────────────────────────── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  border: 1px solid;
+}
+.badge-amber  { background: rgba(226,163,9,0.1); color: #fbbf24; border-color: rgba(226,163,9,0.25); }
+.badge-green  { background: rgba(16,185,129,0.1); color: #34d399; border-color: rgba(16,185,129,0.25); }
+.badge-red    { background: rgba(239,68,68,0.1); color: #f87171; border-color: rgba(239,68,68,0.25); }
+.badge-blue   { background: rgba(99,102,241,0.1); color: #818cf8; border-color: rgba(99,102,241,0.25); }
+.badge-slate  { background: rgba(51,65,85,0.3); color: #94a3b8; border-color: rgba(51,65,85,0.5); }
+
+/* ── Section title ─────────────────────────── */
+.section-title {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  margin-bottom: 0.75rem;
+}
+
+/* ── Modal backdrop ────────────────────────── */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(11, 15, 25, 0.8);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* ── Fountain / Screenplay Preview ────────── */
+.prose-script {
+  font-family: 'Courier New', 'Courier', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #1e293b;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.prose-script .scene-heading {
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-script .action {
+  margin-bottom: 0.5em;
+}
+.prose-script .character {
+  text-transform: uppercase;
+  margin-top: 1em;
+  margin-left: 3em;
+  font-weight: 600;
+}
+.prose-script .dialogue-block {
+  margin-left: 2em;
+  margin-right: 2em;
+}
+.prose-script .dialogue {
+  margin-bottom: 0.25em;
+}
+.prose-script .parenthetical {
+  margin-left: 3.5em;
+  font-style: italic;
+  margin-bottom: 0.25em;
+}
+.prose-script .transition {
+  text-transform: uppercase;
+  text-align: right;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+.prose-script .centered {
+  text-align: center;
+  margin: 1em 0;
+}
+.prose-script .blank-line {
+  height: 1em;
+}
+.prose-script .section {
+  font-weight: 700;
+  margin: 1em 0;
+}
+.prose-script .synopsis {
+  font-style: italic;
+  color: #64748b;
+  margin: 0.5em 0;
+}

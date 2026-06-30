@@ -1,0 +1,604 @@
+﻿# NEPAL FILM OS — COMPLETE REVISED PLAN
+## Film Production Management SaaS
+### Version 2.0 — Updated with International Competitor Analysis
+
+---
+
+# SECTION 1: INTERNATIONAL COMPETITOR ANALYSIS
+
+## Competitors Studied
+
+| Platform       | Type         | Price/mo     | Key Strength                        |
+|----------------|--------------|--------------|-------------------------------------|
+| StudioBinder   | Cloud SaaS   | $29+         | Script breakdown, shot lists, UX    |
+| Celtx          | Cloud SaaS   | $14.99+      | Screenwriting + production combined |
+| Dramatify      | Cloud SaaS   | $49+/project | TV/Film full lifecycle, AI tools    |
+| Yamdu          | Cloud SaaS   | $49/project  | Scheduling + crew management        |
+| Movie Magic    | Desktop      | $489 one-off | Industry standard scheduling        |
+| Gorilla        | Desktop      | $249+        | Script breakdown, storyboards       |
+| Scenechronize  | Cloud SaaS   | $150+        | Secure doc storage, watermarking    |
+
+## What International Platforms Have That Our Original Plan Was MISSING
+
+| Missing Feature              | StudioBinder | Celtx | Dramatify | Our Old Plan |
+|------------------------------|:---:|:---:|:---:|:---:|
+| Script Writing / Editor      | YES | YES | YES | NO  |
+| Script Breakdown (auto-tag)  | YES | YES | YES | NO  |
+| Stripboard (visual schedule) | YES | YES | YES | NO  |
+| Shot Lists                   | YES | YES | NO  | NO  |
+| Storyboard                   | YES | YES | NO  | NO  |
+| Day Out of Days (DOOD)       | YES | NO  | YES | NO  |
+| Document Watermarking        | YES | YES | YES | NO  |
+| Time Sheets / Payroll        | NO  | NO  | YES | NO  |
+| Task Management              | YES | NO  | YES | NO  |
+| In-app Messaging             | YES | NO  | YES | NO  |
+| Continuity Tracking          | NO  | NO  | YES | NO  |
+| Wardrobe Management          | NO  | NO  | YES | NO  |
+| Catering / Food Tracking     | NO  | NO  | YES | NO  |
+| Daily Production Reports     | YES | NO  | YES | NO  |
+| Equipment / Asset Management | NO  | NO  | YES | NO  |
+| Document Library             | YES | YES | YES | NO  |
+| Role Per Film (not global)   | YES | YES | YES | NO  |
+| Notifications (push/email)   | YES | YES | YES | NO  |
+| Audit Trail / Activity Log   | YES | NO  | YES | partial |
+| Series / Episode Support     | YES | YES | YES | NO  |
+| AI Features                  | NO  | NO  | YES | NO  |
+| Mobile App                   | YES | YES | YES | NO  |
+| PDF Export (all docs)        | YES | YES | YES | partial |
+| Contract Management          | NO  | NO  | NO  | NO  |
+
+## Nepal Film OS Competitive Advantage (What We Have That They Don't)
+
+- Nepali language support (UI + documents)
+- Nepal-specific film industry workflows (Nepali call sheet format)
+- Local film news feed (OnlineKhabar, Setopati, etc.)
+- NPR currency support with Nepali tax/VAT rules
+- Affordable pricing for Nepali productions (NPR 2k–5k/month)
+- Nepal Film Board / censor board compliance tracking
+- WhatsApp share integration (dominant communication in Nepal)
+- Bikram Sambat (Nepali calendar) date display option
+
+---
+
+# SECTION 2: PROJECT OVERVIEW
+
+Nepal Film OS is a Film Production Management SaaS web application built specifically for the Nepali film industry.
+
+## What It Replaces
+- WhatsApp groups for coordination
+- Excel sheets for schedules and budgets
+- Paper call sheets
+- Manual expense tracking
+- Fragmented communication across departments
+
+## What It Provides
+A centralized, real-time, role-based film production management platform for the Nepali film industry from pre-production to post-production.
+
+---
+
+# SECTION 3: TECH STACK (MANDATORY)
+
+## Backend
+- Framework: Laravel (PHP 8.2+)
+- API: RESTful JSON API (Laravel Sanctum auth)
+- Queue: Laravel Jobs + Redis (for notifications, PDF generation)
+- Real-time MVP: AJAX polling every 10-15 seconds
+- Real-time v2: Laravel Echo + Pusher / WebSockets
+
+## Frontend
+- Framework: React 18 (Vite)
+- UI Library: Tailwind CSS + shadcn/ui
+- State Management: Zustand or React Query
+- Routing: React Router v6 (role-aware route guards)
+
+## Database
+- MySQL 8+ (primary data)
+- Redis (caching, sessions, queue)
+
+## Storage
+- Local (development)
+- AWS S3 or DigitalOcean Spaces (production)
+
+## Auth
+- Laravel Sanctum (SPA token auth)
+- Social login optional: Google OAuth
+
+## Infrastructure
+- Server: DigitalOcean / Linode (Nepal VPS preferred)
+- CDN: Cloudflare
+- Email: Mailgun or SendGrid
+- SMS/WhatsApp: Twilio or Sparrow SMS (Nepal local gateway)
+
+---
+
+# SECTION 4: MULTI-TENANT ARCHITECTURE
+
+- One platform, multiple film workspaces
+- Each film = isolated workspace (film_id scoped on all queries)
+- Users belong to multiple films with DIFFERENT roles per film
+- Super Admin manages all films across the platform
+- Scale target: 100+ films simultaneously
+- Redis caching for dashboard data, proper DB indexing on film_id
+
+---
+
+# SECTION 5: USER ROLES (PER FILM, NOT GLOBAL)
+
+## Key Architecture Rule
+A user role is PER FILM, not global.
+Ram Shrestha can be Director on "Prem Geet 4" AND Production Manager on "Loot 3" AND Crew on "Chhaka Panja 5".
+This is managed via the film_users pivot table.
+
+## Roles
+1. Super Admin       - Platform owner. Sees all films. Manages subscriptions and modules.
+2. Producer          - Film owner. Full access to their film workspace.
+3. Director          - Creative lead. Schedule, script, shot list, progress.
+4. Production Manager - Operations lead. Budget, crew, logistics, call sheets.
+5. Department Head   - HOD for a specific dept (costume, camera, makeup, etc.)
+6. Crew / Staff      - Limited access. Own call sheet, check-in, progress upload only.
+
+## Role-Based Permission Matrix
+
+Feature                  | Super Admin | Producer | Director | Prod Mgr | Dept Head | Crew
+All films list           | YES         | NO       | NO       | NO       | NO        | NO
+Create film workspace    | YES         | NO       | NO       | NO       | NO        | NO
+Module enable/disable    | YES         | NO       | NO       | NO       | NO        | NO
+Film dashboard           | YES         | YES      | YES      | YES      | YES       | limited
+Budget full view         | YES         | YES      | view     | view     | NO        | NO
+Approve expenses         | YES         | YES      | NO       | NO       | NO        | NO
+Add expense              | YES         | YES      | YES      | YES      | YES       | NO
+Shooting schedule edit   | YES         | YES      | YES      | YES      | NO        | NO
+Shooting schedule view   | YES         | YES      | YES      | YES      | YES       | YES
+Script edit              | YES         | YES      | YES      | NO       | NO        | NO
+Script breakdown         | YES         | YES      | YES      | YES      | NO        | NO
+Shot list edit           | YES         | YES      | YES      | NO       | NO        | NO
+Call sheet generate      | YES         | YES      | YES      | YES      | NO        | NO
+Call sheet view own      | YES         | YES      | YES      | YES      | YES       | YES
+Manage cast/crew         | YES         | YES      | YES      | YES      | NO        | NO
+Progress upload          | YES         | YES      | YES      | YES      | YES       | YES
+Wardrobe module          | YES         | YES      | view     | view     | own dept  | NO
+Task management          | YES         | YES      | YES      | YES      | own dept  | own only
+Time sheets              | YES         | YES      | YES      | YES      | YES       | own only
+Documents library        | YES         | YES      | YES      | YES      | limited   | NO
+Analytics / reports      | YES         | YES      | limited  | limited  | NO        | NO
+Invite team members      | YES         | YES      | NO       | YES      | NO        | NO
+Audit trail              | YES         | YES      | NO       | NO       | NO        | NO
+
+---
+
+# SECTION 6: COMPLETE MODULE LIST (18 MODULES)
+
+Modules are toggled per film by Super Admin via film_modules table.
+
+MODULE 1: SHOOTING SCHEDULE
+- Day-wise schedule view
+- Stripboard (drag and drop visual scene ordering - industry standard)
+- Scene breakdown per day, location assignment, call time per department
+- Scene status: not started / in progress / completed / postponed
+- Day Out of Days (DOOD) - cast availability matrix across all shoot days
+
+MODULE 2: SCRIPT AND BREAKDOWN (NEW)
+- Script upload (PDF/FDX import)
+- Scene-by-scene breakdown: cast, props, wardrobe, SFX, vehicles, extras count
+- Color-coded element categories (industry standard)
+- Script revision tracking and version history
+- Script sides generation per actor per day
+- Watermarked PDF export per cast/crew member
+
+MODULE 3: SHOT LIST AND STORYBOARD (NEW)
+- Shot list per scene with: shot type, camera angle, lens, movement, description
+- Storyboard image upload per shot
+- Link shots to scenes, export shot list as PDF
+
+MODULE 4: CAST AND CREW MANAGEMENT
+- Actor and crew profiles with photo
+- Department grouping with HOD assignment
+- Availability calendar, Day Out of Days tracking
+- Contact database (phone, email, WhatsApp)
+- Emergency contacts, contract status
+- Invite crew via email/SMS
+
+MODULE 5: EXPENSE TRACKING AND BUDGET
+- Department-wise budget definition
+- Real-time expense entry with receipt image upload
+- Full categories: Pre-production, Camera, Lighting, Art, Costume, Makeup, Location, Travel, Food, Crew/Cast Payments, Post-production, Marketing, Misc
+- Budget vs actual dashboard with visual charts
+- Expense approval workflow (submit -> approve -> paid)
+- Purchase Order (PO) tracking
+- Export to Excel/PDF
+
+MODULE 6: PROGRESS TRACKING (REAL-TIME)
+- Photo/video upload from set
+- Scene status updates
+- Daily progress log (scenes completed, pages shot, hours worked)
+- Director notes per scene
+- Activity timeline feed
+- Planned vs actual scene comparison
+
+MODULE 7: CALL SHEET
+- Auto-generate from schedule and cast/crew data
+- Individual department call times
+- Weather, emergency contacts, catering info
+- Watermarked PDF generation
+- Share via WhatsApp, Email, in-app notification
+- Track who has acknowledged the call sheet
+
+MODULE 8: LOCATION MANAGEMENT
+- Location database with photos and GPS coordinates
+- Permit status tracking (pending/approved/rejected)
+- Contact person for location, shoot history
+- Parking, logistics, and nearest facilities notes
+
+MODULE 9: WARDROBE AND COSTUME (NEW)
+- Costume catalog per character
+- Scene-by-scene costume assignment with continuity photos
+- Costume status (ready / in alteration / missing)
+
+MODULE 10: CONTINUITY TRACKING (NEW)
+- Per-scene continuity records (wardrobe, hair, makeup, props, set)
+- Continuity photos with scene-to-scene comparison notes
+- Script supervisor notes
+
+MODULE 11: TASK MANAGEMENT (NEW)
+- Tasks with due date, assigned to, priority
+- Department-level task boards
+- Task status: todo / in progress / done
+- Linked to scenes or modules, overdue alerts
+
+MODULE 12: TIME SHEETS (NEW)
+- Daily check-in/check-out (manual or QR code scan)
+- Auto-calculate hours and overtime
+- Department-wise summary, export for payroll
+
+MODULE 13: DAILY PRODUCTION REPORT - DPR (NEW)
+- Auto-generated from day's data (schedule, progress, expenses, time sheets)
+- Scenes/pages scheduled vs completed, crew count, total hours, daily expenses
+- Director and PM notes
+- PDF export in industry standard format
+- Auto-sent to producer at end of day
+
+MODULE 14: DOCUMENT LIBRARY (NEW)
+- Upload contracts, permits, NDAs, licenses with folder structure
+- Role-based access per document
+- Watermarked PDF download (viewer name + timestamp)
+- Version history and expiry alerts
+
+MODULE 15: IN-APP MESSAGING (NEW)
+- Direct messages, department group chats, producer announcements
+- File and photo attachments, pinned messages, read receipts
+- MVP: polling; v2: WebSockets
+
+MODULE 16: NOTIFICATIONS (NEW)
+- In-app notification center
+- Email (call sheet sent, expense approved, task assigned)
+- WhatsApp and Sparrow SMS (Nepal)
+- User notification preferences
+
+MODULE 17: NEWS AND INDUSTRY FEED
+- Nepal + global film news via RSS
+- Categories: casting, releases, box office, celebrity, awards
+- Nepal: OnlineKhabar, MyRepublica, Setopati, Kathmandu Post, xnepali.net, cinepatra, reelnepal, RONB
+- Global: Variety, Hollywood Reporter, Deadline, IMDb News
+
+MODULE 18: SERIES AND EPISODE MANAGEMENT (NEW)
+- Create series with multiple episodes
+- Each episode has its own schedule, script, budget
+- Cross-episode cast/crew management and series-level budget aggregation
+
+---
+
+# SECTION 7: SUPER ADMIN FEATURES
+
+- Platform dashboard: total films, active users, revenue
+- Create and manage film workspaces
+- Enable/disable modules per film (film_modules table)
+- Manage subscription plans and billing
+- View any film workspace (read-only audit)
+- Platform analytics (usage trends, popular modules)
+- User management across all films
+
+Module control stored as JSON in film_modules table:
+schedule, script_breakdown, shot_list, cast_crew, expenses, progress,
+call_sheet, locations, wardrobe, continuity, tasks, timesheets,
+dpr, documents, messaging, news_feed, series_mode
+
+---
+
+# SECTION 8: DATABASE SCHEMA (MYSQL)
+
+users: id, name, email, phone, password, avatar, preferred_language, timezone, is_active, last_login_at
+
+films: id, title, slug, description, poster_image, genre, language, production_company, status, start_date, expected_wrap_date, subscription_plan_id, is_active, series_id, created_by
+
+film_users [KEY TABLE - role per film]:
+  id, film_id, user_id, role, department, permissions JSON, invited_by, joined_at, is_active
+  UNIQUE INDEX: (film_id, user_id)
+  INDEX: (film_id, role)
+
+film_modules: id, film_id, module_name, is_enabled
+  UNIQUE INDEX: (film_id, module_name)
+
+schedules: id, film_id, day_number, shoot_date, status, call_time, wrap_time, location_id, notes
+  INDEX: (film_id, shoot_date)
+
+scenes: id, film_id, scene_number, scene_heading, int_ext, location_id, day_or_night, page_count, summary, status, order_index
+  INDEX: (film_id, scene_number)
+
+scene_schedule [pivot]: id, schedule_id, scene_id, order_index
+
+script_breakdowns: id, scene_id, film_id, cast_ids JSON, props JSON, wardrobe JSON, sfx JSON, vehicles JSON, extras_count, revision_number, version_color
+
+shot_lists: id, scene_id, film_id, shot_number, shot_type, camera_angle, lens_mm, movement, description, storyboard_image, duration_seconds, status, created_by
+
+cast_crew: id, film_id, user_id, name, photo, role_type, role_name, department, character_name, contact_phone, contact_email, whatsapp, emergency_contact_name, emergency_contact_phone, contract_status, day_rates
+
+cast_availability [DOOD]: id, cast_crew_id, film_id, shoot_date, status (required/available/hold/not_required)
+
+expenses: id, film_id, department_id, category, amount, currency (NPR), description, receipt_image, date, submitted_by, approved_by, status (pending/approved/rejected/paid), po_number, payment_method
+  INDEX: (film_id, date), (film_id, status)
+
+budgets: id, film_id, department_id, category, budgeted_amount, currency
+
+call_sheets: id, film_id, schedule_id, shoot_date, general_call_time, location_id, catering_info, weather, emergency_info, special_instructions, is_sent, sent_at, created_by
+
+call_sheet_entries: id, call_sheet_id, cast_crew_id, call_time, scenes_today JSON, notes, is_acknowledged, acknowledged_at
+
+locations: id, film_id, name, address, gps_lat, gps_lng, photos JSON, permit_status, permit_document, contact_name, contact_phone, parking_info, facilities_notes
+
+progress_updates: id, film_id, scene_id, schedule_id, status, media_files JSON, notes, reported_by, scenes_completed, pages_completed
+  INDEX: (film_id, created_at)
+
+wardrobe_items: id, film_id, character_id, scene_id, description, continuity_photo, status, notes, assigned_to
+
+continuity_records: id, scene_id, film_id, type, continuity_photo, notes, captured_by, created_at
+
+tasks: id, film_id, title, description, assigned_to, due_date, priority, status, related_module, related_id, created_by
+  INDEX: (film_id, assigned_to, status)
+
+time_sheets: id, film_id, user_id, shoot_date, check_in, check_out, break_minutes, total_hours, overtime_hours, notes, approved_by
+  INDEX: (film_id, shoot_date), (film_id, user_id)
+
+daily_production_reports: id, film_id, schedule_id, report_date, scenes_scheduled, scenes_completed, pages_scheduled, pages_completed, crew_count, total_hours, daily_expenses, notes_director, notes_pm, generated_at, sent_to JSON
+
+documents: id, film_id, folder, document_name, file_path, file_type, file_size, access_roles JSON, uploaded_by, version, expires_at, is_watermarked, is_confidential
+
+messages: id, film_id, sender_id, group_id, receiver_id, message, attachments JSON, is_announcement, is_pinned
+  INDEX: (film_id, sender_id), (film_id, group_id)
+
+message_reads: id, message_id, user_id, read_at
+
+notifications: id, user_id, film_id, type, title, body, data JSON, is_read, read_at
+  INDEX: (user_id, is_read)
+
+activity_logs [Audit trail]: id, film_id, user_id, action, module, record_type, record_id, old_value JSON, new_value JSON, ip_address, user_agent
+  INDEX: (film_id, created_at), (film_id, module)
+
+subscription_plans: id, name, price_npr, price_usd, billing_cycle, max_films, max_users_per_film, features JSON, is_active
+
+film_subscriptions: id, film_id, plan_id, status (trial/active/expired/cancelled), started_at, expires_at, payment_reference
+
+series: id, title, total_episodes, created_by
+
+---
+
+# SECTION 9: LARAVEL BACKEND ARCHITECTURE
+
+## Middleware Chain (every film API request)
+Request -> Authenticate (Sanctum) -> FilmAccessMiddleware -> FilmRoleMiddleware -> ModuleEnabledMiddleware -> Controller
+
+## Key Middleware Files
+- FilmAccessMiddleware.php       checks film_users: does this user belong to this film?
+- FilmRoleMiddleware.php         checks role within film, injects into request
+- ModuleEnabledMiddleware.php    checks film_modules: is this module enabled?
+- SuperAdminMiddleware.php
+
+## API Routes
+/api/auth/...
+/api/super-admin/...                    [SuperAdminMiddleware]
+/api/films/{film}/schedule              [FilmAccessMiddleware + FilmRoleMiddleware]
+/api/films/{film}/scenes
+/api/films/{film}/script-breakdown
+/api/films/{film}/shot-list
+/api/films/{film}/cast-crew
+/api/films/{film}/expenses
+/api/films/{film}/budget
+/api/films/{film}/call-sheets
+/api/films/{film}/locations
+/api/films/{film}/progress
+/api/films/{film}/wardrobe
+/api/films/{film}/continuity
+/api/films/{film}/tasks
+/api/films/{film}/timesheets
+/api/films/{film}/dpr
+/api/films/{film}/documents
+/api/films/{film}/messages
+/api/films/{film}/notifications
+
+## Key Services
+- CallSheetService.php       auto-generate call sheets
+- PDFExportService.php       all PDF generation via DomPDF/Snappy
+- DPRService.php             auto-generate daily production report
+- WhatsAppService.php        Twilio/Sparrow SMS integration
+- NewsAggregatorService.php  RSS feed fetcher (hourly job)
+
+## Scheduled Jobs
+- GenerateDailyCallSheet.php     runs each morning
+- GenerateDPR.php                runs end of each shoot day
+- SendCallSheetNotifications.php
+- FetchFilmNews.php              hourly
+
+---
+
+# SECTION 10: REACT FRONTEND ARCHITECTURE
+
+## Role-Based Layouts
+- SuperAdminLayout.jsx        all films, platform controls
+- ProducerLayout.jsx          full sidebar, budget approval buttons
+- DirectorLayout.jsx          schedule/script/shot list focus
+- ProductionManagerLayout.jsx budget/crew/logistics focus
+- DeptHeadLayout.jsx          own department view
+- CrewLayout.jsx              call sheet + check-in only
+
+## Auth Flow
+1. User logs in, receives Sanctum token
+2. User selects film from "My Films" list
+3. API returns: { film, role, permissions, enabled_modules }
+4. React stores in authStore
+5. Router renders appropriate Layout based on role
+6. RoleGuard and ModuleGuard protect routes/components
+7. All API calls include film_id + auth token
+
+## State (Zustand stores)
+- authStore: user, current film, role, permissions
+- filmStore: film context, enabled modules
+
+---
+
+# SECTION 11: UI/UX REQUIREMENTS
+
+Design Principles:
+- Mobile-first (set work happens on phones)
+- WhatsApp-level simplicity (no training needed)
+- Fast 1-tap operations
+- Works on slow 4G connections
+- Nepali language toggle (EN/NE)
+- Dark mode support
+
+Sidebar (dynamic - shows only enabled modules filtered by role):
+Dashboard, Schedule/Stripboard, Script/Breakdown, Shot List, Cast/Crew,
+Budget/Expenses, Call Sheets, Locations, Progress, Wardrobe, Continuity,
+Tasks, Time Sheets, DPR, Documents, Messages, News
+
+---
+
+# SECTION 12: REAL-TIME REQUIREMENTS
+
+MVP: AJAX polling every 10-15 seconds
+Phase 2: Laravel Echo + Pusher WebSockets
+
+Activity Feed Format:
+  09:00 AM - Call sheet sent to 32 crew members
+  10:15 AM - Scene 12 marked IN PROGRESS by Director
+  11:30 AM - Expense NPR 15,000 added (Camera Equipment)
+  12:00 PM - 26 crew checked in via time sheet
+  01:00 PM - Scene 12 marked COMPLETED (2 pages shot)
+
+---
+
+# SECTION 13: PDF EXPORT REQUIREMENTS
+
+All exports: professional, watermarked, industry standard format
+1. Call Sheet PDF (with film logo, recipient watermark)
+2. Script Breakdown Sheet PDF
+3. Shooting Schedule PDF (stripboard view)
+4. Shot List PDF
+5. Day Out of Days (DOOD) PDF
+6. Daily Production Report (DPR) PDF
+7. Expense Report PDF
+8. Budget vs Actual PDF
+9. Time Sheet PDF (for payroll)
+10. Location Sheet PDF
+
+---
+
+# SECTION 14: NEPAL-SPECIFIC FEATURES
+
+1. Nepali language UI toggle (EN/NE)
+2. NPR as default currency with Nepal VAT rules
+3. Nepal Film Board compliance tracking (censor clearance, certificates)
+4. Local news feed via RSS (Nepali entertainment sources)
+5. WhatsApp integration for call sheet distribution
+6. Sparrow SMS fallback (Nepal local gateway)
+7. Nepal public holiday calendar (alert if shoot day is holiday)
+8. Bikram Sambat (Nepali calendar) display alongside AD
+
+---
+
+# SECTION 15: MONETIZATION MODEL
+
+Option 1 - Per-Film License:
+- Small/indie: NPR 15,000 one-time
+- Mid-budget feature: NPR 50,000 one-time
+- Large production: NPR 100,000+ one-time
+
+Option 2 - SaaS Monthly:
+- Basic:        NPR 2,000/month (5 modules, 10 users)
+- Professional: NPR 5,000/month (all modules, 30 users)
+- Studio:       NPR 12,000/month (unlimited films, unlimited users)
+
+Option 3 - Freemium:
+- Free tier: 1 film, 3 modules, 5 users
+- Paid: unlock everything
+
+Revenue at 100 active films at avg NPR 5,000/month = NPR 500,000/month
+Revenue at 500 active films at avg NPR 5,000/month = NPR 2,500,000/month
+
+---
+
+# SECTION 16: MVP BUILD ROADMAP
+
+Phase 1 - Core MVP (Weeks 1-6):
+User auth, film workspace creation, role-per-film (film_users), module toggle,
+shooting schedule, cast/crew, basic expenses, call sheet + PDF,
+progress updates (photo upload), dashboard per role
+
+Phase 2 - Production Ready (Weeks 7-12):
+Script upload + breakdown, stripboard, shot list, budget vs actual charts,
+document library (watermarking), task management, time sheets,
+DPR auto-generation, notifications (in-app + email), WhatsApp call sheet sharing
+
+Phase 3 - Full Platform (Weeks 13-20):
+In-app messaging, wardrobe + continuity, DOOD, series/episode support,
+news feed (RSS), Nepali language toggle, WebSocket upgrade,
+mobile PWA, Super Admin analytics, subscription/billing system
+
+Phase 4 - Growth (Post-launch):
+React Native mobile app, AI scheduling suggestions, AI script breakdown,
+offline mode for on-set use, accounting software integration,
+Nepal Film Board compliance module, third-party API access
+
+---
+
+# SECTION 17: SECURITY REQUIREMENTS (OWASP)
+
+- All API routes protected by Sanctum token (no public endpoints)
+- Role-based access enforced at controller + Policy level, not only frontend
+- film_id scope enforced on EVERY database query (prevent cross-tenant leakage)
+- File uploads: type validation, size limits, malware scanning
+- Document watermarking to prevent unauthorized sharing
+- Rate limiting on all API endpoints
+- Input validation and sanitization (SQL injection, XSS prevention)
+- HTTPS enforced via Cloudflare SSL
+- Full audit trail for all sensitive actions with old/new values
+- 2FA optional for Super Admin and Producer roles
+- Session expiry and token rotation
+
+---
+
+# SECTION 18: SUMMARY - WHAT CHANGED FROM ORIGINAL PLAN
+
+Area                     | Original Plan v1      | Updated Plan v2
+User roles               | Global role on user   | Role per film via film_users pivot
+Total modules            | 7 modules             | 18 modules
+Script support           | Missing               | Script upload + breakdown + sides
+Stripboard               | Missing               | Full drag and drop stripboard
+Shot list                | Missing               | Full shot list + storyboard
+Day Out of Days          | Missing               | DOOD matrix from cast availability
+Time sheets              | Missing               | Daily check-in/out + hours tracking
+Daily Production Report  | Missing               | Auto-generated DPR per day
+Wardrobe and continuity  | Missing               | Full wardrobe + continuity modules
+Task management          | Missing               | Task board per department
+Document library         | Missing               | Secure docs with watermarking
+In-app messaging         | Missing               | Direct + group + announcement msgs
+Notifications            | Missing               | In-app + email + WhatsApp + SMS
+Series/episode support   | Missing               | Multi-episode series management
+PDF exports              | Call sheet only       | All 10 document types
+Security architecture    | Basic mention         | Full OWASP-aligned security layer
+Nepal-specific features  | News feed only        | 8 Nepal-specific features
+Scale design             | film_id scoping       | Indexing + Redis caching strategy
+Audit trail              | Activity log          | Full audit trail with old/new values
+Role-based views         | Not defined           | Full permission matrix per role
+
+---
+
+END OF PLAN v2.0
