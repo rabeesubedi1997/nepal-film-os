@@ -15,7 +15,7 @@ import {
   ListOrdered, Sun, Moon, Sunrise, Sunset, RefreshCw,
   Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3,
   List, ListOrdered as ListOrderedIcon, Quote, Minus, Link, AlignLeft, AlignCenter, AlignRight,
-  RemoveFormatting
+  RemoveFormatting, Maximize2, Minimize2
 } from 'lucide-react';
 
 const DEFAULT_TITLE = 'Untitled Script';
@@ -40,8 +40,9 @@ export default function ScriptEditor() {
   const [scripts, setScripts] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [title, setTitle] = useState('');
-  const [showPreview, setShowPreview] = useState(true);
+  const [showPreview, setShowPreview] = useState(false);
   const [showSource, setShowSource] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -66,7 +67,7 @@ export default function ScriptEditor() {
     onUpdate: () => { setDirty(true); },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none prose-invert focus:outline-none min-h-[200px] p-4 rounded-xl bg-slate-900 border border-slate-700 focus-within:border-amber-500',
+        class: 'prose prose-sm max-w-none prose-invert focus:outline-none min-h-[400px] p-4 rounded-xl bg-slate-900 border border-slate-700 focus-within:border-amber-500',
       },
     },
   });
@@ -335,17 +336,22 @@ ${printContent}
         <div className="flex items-center gap-1.5">
           {(title || activeId !== null) && (
             <>
-              <button onClick={() => { setShowSource(false); setShowPreview(!showPreview); }}
+              <button onClick={() => setShowPreview(!showPreview)}
                 className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg transition-all ${
-                  showPreview && !showSource ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                  showPreview ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
                 }`}>
                 <Eye className="h-3.5 w-3.5" /> Preview
               </button>
-              <button onClick={() => { setShowPreview(false); setShowSource(!showSource); }}
+              <button onClick={() => setShowSource(!showSource)}
                 className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg transition-all ${
                   showSource ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
                 }`}>
                 <Code className="h-3.5 w-3.5" /> Source
+              </button>
+              <button onClick={() => setExpanded(!expanded)}
+                className="flex items-center gap-1 text-xs px-2.5 py-1.5 bg-slate-800 text-slate-400 rounded-lg hover:text-slate-200 transition-all"
+                title={expanded ? 'Collapse' : 'Expand'}>
+                {expanded ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
               </button>
               <button onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-1 text-xs px-2.5 py-1.5 bg-slate-800 text-slate-400 rounded-lg hover:text-slate-200 transition-all">
@@ -420,34 +426,38 @@ ${printContent}
                 </button>
               </div>
 
-              {!showPreview && !showSource && (
-                <>
-                  <div className="flex items-center flex-wrap gap-0.5 mb-1.5 px-1 py-1 bg-slate-900 rounded-lg border border-slate-800">
-                    <MenuButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Bold"><Bold className="h-3.5 w-3.5" /></MenuButton>
-                    <MenuButton onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="Italic"><Italic className="h-3.5 w-3.5" /></MenuButton>
-                    <MenuButton onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} title="Underline"><UnderlineIcon className="h-3.5 w-3.5" /></MenuButton>
-                    <MenuButton onClick={toggleLink} active={editor.isActive('link')} title="Link"><Link className="h-3.5 w-3.5" /></MenuButton>
-                    <Divider />
-                    <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} title="Heading 1"><Heading1 className="h-3.5 w-3.5" /></MenuButton>
-                    <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} title="Heading 2"><Heading2 className="h-3.5 w-3.5" /></MenuButton>
-                    <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })} title="Heading 3"><Heading3 className="h-3.5 w-3.5" /></MenuButton>
-                    <Divider />
-                    <MenuButton onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet List"><List className="h-3.5 w-3.5" /></MenuButton>
-                    <MenuButton onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Ordered List"><ListOrderedIcon className="h-3.5 w-3.5" /></MenuButton>
-                    <MenuButton onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="Blockquote"><Quote className="h-3.5 w-3.5" /></MenuButton>
-                    <Divider />
-                    <MenuButton onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })} title="Align Left"><AlignLeft className="h-3.5 w-3.5" /></MenuButton>
-                    <MenuButton onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })} title="Align Center"><AlignCenter className="h-3.5 w-3.5" /></MenuButton>
-                    <MenuButton onClick={() => editor.chain().focus().setTextAlign('right').run()} active={editor.isActive({ textAlign: 'right' })} title="Align Right"><AlignRight className="h-3.5 w-3.5" /></MenuButton>
-                    <Divider />
-                    <MenuButton onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Horizontal Rule"><Minus className="h-3.5 w-3.5" /></MenuButton>
-                    <MenuButton onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Clear Formatting"><RemoveFormatting className="h-3.5 w-3.5" /></MenuButton>
-                  </div>
-                </>
-              )}
+              <div className="flex items-center flex-wrap gap-0.5 mb-1.5 px-1 py-1 bg-slate-900 rounded-lg border border-slate-800">
+                <MenuButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Bold"><Bold className="h-3.5 w-3.5" /></MenuButton>
+                <MenuButton onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="Italic"><Italic className="h-3.5 w-3.5" /></MenuButton>
+                <MenuButton onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} title="Underline"><UnderlineIcon className="h-3.5 w-3.5" /></MenuButton>
+                <MenuButton onClick={toggleLink} active={editor.isActive('link')} title="Link"><Link className="h-3.5 w-3.5" /></MenuButton>
+                <Divider />
+                <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} title="Heading 1"><Heading1 className="h-3.5 w-3.5" /></MenuButton>
+                <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} title="Heading 2"><Heading2 className="h-3.5 w-3.5" /></MenuButton>
+                <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })} title="Heading 3"><Heading3 className="h-3.5 w-3.5" /></MenuButton>
+                <Divider />
+                <MenuButton onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet List"><List className="h-3.5 w-3.5" /></MenuButton>
+                <MenuButton onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Ordered List"><ListOrderedIcon className="h-3.5 w-3.5" /></MenuButton>
+                <MenuButton onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="Blockquote"><Quote className="h-3.5 w-3.5" /></MenuButton>
+                <Divider />
+                <MenuButton onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })} title="Align Left"><AlignLeft className="h-3.5 w-3.5" /></MenuButton>
+                <MenuButton onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })} title="Align Center"><AlignCenter className="h-3.5 w-3.5" /></MenuButton>
+                <MenuButton onClick={() => editor.chain().focus().setTextAlign('right').run()} active={editor.isActive({ textAlign: 'right' })} title="Align Right"><AlignRight className="h-3.5 w-3.5" /></MenuButton>
+                <Divider />
+                <MenuButton onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Horizontal Rule"><Minus className="h-3.5 w-3.5" /></MenuButton>
+                <MenuButton onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Clear Formatting"><RemoveFormatting className="h-3.5 w-3.5" /></MenuButton>
+              </div>
 
               <div className="flex-1 flex gap-3 min-h-0">
-                {showSource ? (
+                {!showSource ? (
+                  <div className={`flex flex-col ${showPreview ? 'flex-1' : 'flex-1'}`}>
+                    <div className="flex items-center justify-between mb-1 shrink-0">
+                      <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Editor</span>
+                      <span className="text-xs text-slate-600">{editor.storage.characterCount?.characters?.() || contentHtml.replace(/<[^>]*>/g, '').length} chars</span>
+                    </div>
+                    <EditorContent editor={editor} className="flex-1 overflow-y-auto" />
+                  </div>
+                ) : (
                   <div className="flex-1 flex flex-col">
                     <div className="flex items-center justify-between mb-1 shrink-0">
                       <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">HTML Source</span>
@@ -456,26 +466,20 @@ ${printContent}
                     <textarea value={contentHtml} onChange={e => { editor?.commands.setContent(e.target.value); setDirty(true); }}
                       className="flex-1 bg-slate-900 border border-slate-700 text-slate-200 text-xs p-4 rounded-xl focus:outline-none focus:border-amber-500 resize-none font-mono leading-relaxed" />
                   </div>
-                ) : showPreview ? (
-                  <div className="flex-1 flex flex-col">
+                )}
+                {showPreview && !showSource && (
+                  <div className="w-1/2 flex flex-col border-l border-slate-700 pl-3">
                     <div className="flex items-center justify-between mb-1 shrink-0">
                       <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Preview</span>
                       <span className="text-xs text-slate-600">Rich text</span>
                     </div>
-                    <div ref={previewRef} className="flex-1 bg-white rounded-xl p-8 overflow-y-auto prose max-w-none"
+                    <div ref={previewRef} className="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-6 overflow-y-auto prose prose-sm prose-invert max-w-none"
                       dangerouslySetInnerHTML={{ __html: contentHtml }} />
-                  </div>
-                ) : (
-                  <div className="flex-1 flex flex-col">
-                    <div className="flex items-center justify-between mb-1 shrink-0">
-                      <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Editor</span>
-                      <span className="text-xs text-slate-600">{editor.storage.characterCount?.characters?.() || contentHtml.replace(/<[^>]*>/g, '').length} chars</span>
-                    </div>
-                    <EditorContent editor={editor} className="flex-1 overflow-y-auto" />
                   </div>
                 )}
               </div>
 
+              {!expanded && (
               <div className="mt-3 bg-slate-900 border border-slate-800 rounded-xl">
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800">
                   <div className="flex items-center gap-2">
@@ -537,15 +541,16 @@ ${printContent}
                                   </button>
                                 )}
                                 <button onClick={() => handleDeleteScene(scene.id)} className="p-1 text-slate-500 hover:text-red-400 transition-colors"><Trash2 className="h-3 w-3" /></button>
-                              </div>
-                            </div>
-                          </div>
+                  </div>
+                </div>
+              </div>
                         );
                       })}
                     </div>
                   )}
                 </div>
               </div>
+              )}
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center">
