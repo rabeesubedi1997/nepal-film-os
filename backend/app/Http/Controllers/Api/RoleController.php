@@ -19,8 +19,11 @@ class RoleController extends Controller
             ->first();
     }
 
-    private function requireAdmin($filmUser)
+    private function requireAdmin($filmUser, $user = null)
     {
+        if ($user && $user->is_super_admin) {
+            return;
+        }
         if (!$filmUser) {
             abort(403, 'Unauthorized.');
         }
@@ -46,7 +49,7 @@ class RoleController extends Controller
         $film = Film::findOrFail($filmId);
 
         $filmUser = $this->getFilmUser($filmId, $request->user()->id);
-        $this->requireAdmin($filmUser);
+        $this->requireAdmin($filmUser, $request->user());
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -90,7 +93,7 @@ class RoleController extends Controller
         $role = FilmRole::where('film_id', $filmId)->findOrFail($roleId);
 
         $filmUser = $this->getFilmUser($filmId, $request->user()->id);
-        $this->requireAdmin($filmUser);
+        $this->requireAdmin($filmUser, $request->user());
 
         if ($role->is_admin) {
             return response()->json(['message' => 'Cannot modify the Admin role.'], 403);
@@ -128,7 +131,7 @@ class RoleController extends Controller
         $role = FilmRole::where('film_id', $filmId)->findOrFail($roleId);
 
         $filmUser = $this->getFilmUser($filmId, $request->user()->id);
-        $this->requireAdmin($filmUser);
+        $this->requireAdmin($filmUser, $request->user());
 
         if ($role->is_admin) {
             return response()->json(['message' => 'Cannot delete the Admin role.'], 403);

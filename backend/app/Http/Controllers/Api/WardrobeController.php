@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\WardrobeItem;
 use Illuminate\Http\Request;
 
 class WardrobeController extends Controller
 {
+    use FilmPermissionTrait;
+    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
         $items = WardrobeItem::where('film_id', $filmId)
@@ -29,6 +32,7 @@ class WardrobeController extends Controller
 
     public function store(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'wardrobe.create');
         $validated = $request->validate([
             'character_name' => 'nullable|string|max:255',
             'scene_id' => 'nullable|integer|exists:scenes,id',
@@ -55,6 +59,7 @@ class WardrobeController extends Controller
 
     public function update(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'wardrobe.edit');
         $item = WardrobeItem::where('film_id', $filmId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -74,6 +79,7 @@ class WardrobeController extends Controller
 
     public function destroy(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'wardrobe.delete');
         $item = WardrobeItem::where('film_id', $filmId)->findOrFail($id);
         $item->delete();
 

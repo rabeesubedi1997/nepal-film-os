@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\CastCrew;
 use App\Models\Schedule;
 use App\Models\CastAvailability;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 
 class DayOutOfDaysController extends Controller
 {
+    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
         $schedules = Schedule::where('film_id', $filmId)
@@ -54,6 +56,7 @@ class DayOutOfDaysController extends Controller
 
     public function update(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'schedule.edit');
         $data = $request->validate([
             'cast_crew_id' => 'required|exists:cast_crew,id',
             'shoot_date' => 'required|date',

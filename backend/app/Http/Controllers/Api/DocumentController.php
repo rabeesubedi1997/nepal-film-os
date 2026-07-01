@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\Document;
 use Illuminate\Http\Request;
 
 class DocumentController extends Controller
 {
+    use FilmPermissionTrait;
+    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
         $documents = Document::where('film_id', $filmId)
@@ -29,6 +32,7 @@ class DocumentController extends Controller
 
     public function store(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'document.create');
         $validated = $request->validate([
             'folder' => 'nullable|string',
             'document_name' => 'required|string|max:255',
@@ -62,6 +66,7 @@ class DocumentController extends Controller
 
     public function update(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'document.edit');
         $document = Document::where('film_id', $filmId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -82,6 +87,7 @@ class DocumentController extends Controller
 
     public function destroy(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'document.delete');
         $document = Document::where('film_id', $filmId)->findOrFail($id);
         $document->delete();
 

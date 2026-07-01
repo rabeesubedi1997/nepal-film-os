@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\ContinuityRecord;
 use Illuminate\Http\Request;
 
 class ContinuityController extends Controller
 {
+    use FilmPermissionTrait;
+    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
         $records = ContinuityRecord::where('film_id', $filmId)
@@ -29,6 +32,7 @@ class ContinuityController extends Controller
 
     public function store(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'continuity.create');
         $validated = $request->validate([
             'scene_id' => 'required|integer|exists:scenes,id',
             'type' => 'required|string|in:wardrobe,hair,makeup,props,set',
@@ -50,6 +54,7 @@ class ContinuityController extends Controller
 
     public function update(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'continuity.edit');
         $record = ContinuityRecord::where('film_id', $filmId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -65,6 +70,7 @@ class ContinuityController extends Controller
 
     public function destroy(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'continuity.delete');
         $record = ContinuityRecord::where('film_id', $filmId)->findOrFail($id);
         $record->delete();
 

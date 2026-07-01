@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\Location;
 use Illuminate\Http\Request;
 
 class LocationController extends Controller
 {
+    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
         $locations = Location::where('film_id', $filmId)->get();
@@ -17,6 +19,7 @@ class LocationController extends Controller
 
     public function store(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'location.create');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'nullable|string',
@@ -58,6 +61,7 @@ class LocationController extends Controller
 
     public function update(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'location.edit');
         $location = Location::where('film_id', $filmId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -81,6 +85,7 @@ class LocationController extends Controller
 
     public function destroy(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'location.delete');
         $location = Location::where('film_id', $filmId)->findOrFail($id);
         $location->delete();
 

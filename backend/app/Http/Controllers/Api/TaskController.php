@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\Task;
 use Illuminate\Http\Request;
 
 class TaskController extends Controller
 {
+    use FilmPermissionTrait;
+    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
         $tasks = Task::where('film_id', $filmId)
@@ -29,6 +32,7 @@ class TaskController extends Controller
 
     public function store(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'task.create');
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -58,6 +62,7 @@ class TaskController extends Controller
 
     public function update(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'task.edit');
         $task = Task::where('film_id', $filmId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -78,6 +83,7 @@ class TaskController extends Controller
 
     public function destroy(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'task.delete');
         $task = Task::where('film_id', $filmId)->findOrFail($id);
         $task->delete();
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\ScriptUpdated;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\Location;
 use App\Models\Script;
 use App\Models\Scene;
@@ -13,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 
 class ScriptController extends Controller
 {
+    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
         $scripts = Script::where('film_id', $filmId)
@@ -34,6 +36,7 @@ class ScriptController extends Controller
 
     public function store(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'script.create');
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'nullable|string',
@@ -58,6 +61,7 @@ class ScriptController extends Controller
 
     public function update(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'script.edit');
         $script = Script::where('film_id', $filmId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -79,6 +83,7 @@ class ScriptController extends Controller
 
     public function destroy(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'script.delete');
         $script = Script::where('film_id', $filmId)->findOrFail($id);
         $script->delete();
 

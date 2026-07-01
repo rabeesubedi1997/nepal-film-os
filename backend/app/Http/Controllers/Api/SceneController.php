@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\Location;
 use App\Models\Scene;
 use App\Models\Script;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 
 class SceneController extends Controller
 {
+    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
         $scenes = Scene::where('film_id', $filmId)
@@ -31,6 +33,7 @@ class SceneController extends Controller
 
     public function store(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'scene.create');
         $validated = $request->validate([
             'scene_number' => 'nullable|string|max:20',
             'scene_heading' => 'nullable|string|max:500',
@@ -54,6 +57,7 @@ class SceneController extends Controller
 
     public function update(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'scene.edit');
         $scene = Scene::where('film_id', $filmId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -76,6 +80,7 @@ class SceneController extends Controller
 
     public function destroy(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'scene.delete');
         $scene = Scene::where('film_id', $filmId)->findOrFail($id);
         $scene->delete();
 

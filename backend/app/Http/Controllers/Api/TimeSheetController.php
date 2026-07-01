@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\TimeSheet;
 use App\Models\FilmUser;
 use Illuminate\Http\Request;
 
 class TimeSheetController extends Controller
 {
+    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
         $sheets = TimeSheet::where('film_id', $filmId)
@@ -30,6 +32,7 @@ class TimeSheetController extends Controller
 
     public function store(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'timesheet.create');
         $validated = $request->validate([
             'user_id' => 'required|integer|exists:users,id',
             'shoot_date' => 'required|date',
@@ -59,6 +62,7 @@ class TimeSheetController extends Controller
 
     public function update(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'timesheet.edit');
         $sheet = TimeSheet::where('film_id', $filmId)->findOrFail($id);
 
         if ($sheet->status !== 'draft') {
@@ -81,6 +85,7 @@ class TimeSheetController extends Controller
 
     public function destroy(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'timesheet.delete');
         $sheet = TimeSheet::where('film_id', $filmId)->findOrFail($id);
         $sheet->delete();
 

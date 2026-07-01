@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\BreakdownItem;
 use App\Models\Scene;
 use Illuminate\Http\Request;
 
 class ScriptBreakdownController extends Controller
 {
+    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
         $breakdowns = BreakdownItem::where('film_id', $filmId)
@@ -29,6 +31,7 @@ class ScriptBreakdownController extends Controller
 
     public function store(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'script_breakdown.create');
         $validated = $request->validate([
             'scene_id' => 'required|integer|exists:scenes,id',
             'category' => 'required|string|in:cast,props,wardrobe,sfx,vehicles,extras',
@@ -47,6 +50,7 @@ class ScriptBreakdownController extends Controller
 
     public function update(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'script_breakdown.edit');
         $item = BreakdownItem::where('film_id', $filmId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -64,6 +68,7 @@ class ScriptBreakdownController extends Controller
 
     public function destroy(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'script_breakdown.delete');
         $item = BreakdownItem::where('film_id', $filmId)->findOrFail($id);
         $item->delete();
 

@@ -55,6 +55,9 @@ class NewsController extends Controller
 
     public function store(Request $request)
     {
+        if (!$request->user() || !$request->user()->is_super_admin) {
+            abort(403, 'Only super admins can create news articles.');
+        }
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
@@ -81,6 +84,9 @@ class NewsController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (!$request->user() || !$request->user()->is_super_admin) {
+            abort(403, 'Only super admins can update news articles.');
+        }
         $article = NewsArticle::findOrFail($id);
 
         $validated = $request->validate([
@@ -102,8 +108,11 @@ class NewsController extends Controller
         return response()->json($article->load('category'));
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
+        if (!$request->user() || !$request->user()->is_super_admin) {
+            abort(403, 'Only super admins can delete news articles.');
+        }
         $article = NewsArticle::findOrFail($id);
         $article->delete();
 
@@ -118,6 +127,9 @@ class NewsController extends Controller
 
     public function storeCategory(Request $request)
     {
+        if (!$request->user() || !$request->user()->is_super_admin) {
+            abort(403, 'Only super admins can manage news categories.');
+        }
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:news_categories,slug',
@@ -133,6 +145,9 @@ class NewsController extends Controller
 
     public function updateCategory(Request $request, $id)
     {
+        if (!$request->user() || !$request->user()->is_super_admin) {
+            abort(403, 'Only super admins can manage news categories.');
+        }
         $category = NewsCategory::findOrFail($id);
 
         $validated = $request->validate([
@@ -146,8 +161,11 @@ class NewsController extends Controller
         return response()->json($category);
     }
 
-    public function destroyCategory($id)
+    public function destroyCategory(Request $request, $id)
     {
+        if (!$request->user() || !$request->user()->is_super_admin) {
+            abort(403, 'Only super admins can manage news categories.');
+        }
         $category = NewsCategory::findOrFail($id);
         NewsArticle::where('category_id', $id)->update(['category_id' => null]);
         $category->delete();

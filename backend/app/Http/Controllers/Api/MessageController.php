@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\Message;
 use App\Models\MessageRead;
 use Illuminate\Http\Request;
 
 class MessageController extends Controller
 {
+    use FilmPermissionTrait;
+    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
         $userId = $request->user()->id;
@@ -37,6 +40,7 @@ class MessageController extends Controller
 
     public function store(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'message.create');
         $validated = $request->validate([
             'receiver_id' => 'nullable|integer|exists:users,id',
             'group_id' => 'nullable|integer',
@@ -62,6 +66,7 @@ class MessageController extends Controller
 
     public function destroy(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'message.delete');
         $message = Message::where('film_id', $filmId)->findOrFail($id);
 
         if ($message->sender_id !== $request->user()->id) {

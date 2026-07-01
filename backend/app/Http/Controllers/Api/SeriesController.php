@@ -25,6 +25,9 @@ class SeriesController extends Controller
 
     public function store(Request $request)
     {
+        if (!$request->user() || !$request->user()->is_super_admin) {
+            abort(403, 'Only super admins can create series.');
+        }
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'total_episodes' => 'nullable|integer',
@@ -41,6 +44,9 @@ class SeriesController extends Controller
 
     public function update(Request $request, $id)
     {
+        if (!$request->user() || !$request->user()->is_super_admin) {
+            abort(403, 'Only super admins can update series.');
+        }
         $series = Series::findOrFail($id);
 
         $validated = $request->validate([
@@ -55,6 +61,9 @@ class SeriesController extends Controller
 
     public function destroy(Request $request, $id)
     {
+        if (!$request->user() || !$request->user()->is_super_admin) {
+            abort(403, 'Only super admins can delete series.');
+        }
         $series = Series::findOrFail($id);
         $series->films()->update(['series_id' => null]);
         $series->delete();
