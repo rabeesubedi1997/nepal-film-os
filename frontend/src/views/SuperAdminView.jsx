@@ -36,6 +36,11 @@ export default function SuperAdminView() {
   const [savingAssign, setSavingAssign] = useState(false);
   const [removingFilm, setRemovingFilm] = useState(null);
 
+  const [showFilmModal, setShowFilmModal] = useState(false);
+  const [filmForm, setFilmForm] = useState({ title: '', description: '', genre: '', language: 'Nepali', production_company: '', assign_user_id: '', assign_role_id: '', assign_department: '' });
+  const [savingFilm, setSavingFilm] = useState(false);
+  const [filmFormRoles, setFilmFormRoles] = useState([]);
+
   const [toggleLoading, setToggleLoading] = useState(null);
 
   const fetchAll = async () => {
@@ -170,6 +175,40 @@ export default function SuperAdminView() {
     }
   };
 
+  const openCreateFilm = () => {
+    setFilmForm({ title: '', description: '', genre: '', language: 'Nepali', production_company: '', assign_user_id: '', assign_role_id: '', assign_department: '' });
+    setFilmFormRoles([]);
+    setShowFilmModal(true);
+  };
+
+  const saveFilm = async (e) => {
+    e.preventDefault();
+    if (!filmForm.title.trim()) { addToast('Film title is required', 'error'); return; }
+    setSavingFilm(true);
+    try {
+      const data = {
+        title: filmForm.title,
+        description: filmForm.description || null,
+        genre: filmForm.genre || null,
+        language: filmForm.language || 'Nepali',
+        production_company: filmForm.production_company || null,
+      };
+      if (filmForm.assign_user_id) {
+        data.assign_user_id = Number(filmForm.assign_user_id);
+        if (filmForm.assign_role_id) data.assign_role_id = Number(filmForm.assign_role_id);
+        if (filmForm.assign_department) data.assign_department = filmForm.assign_department;
+      }
+      await api.post('/super-admin/films', data);
+      setShowFilmModal(false);
+      fetchAll();
+      addToast('Film created');
+    } catch (err) {
+      addToast(getErrMsg(err, 'Failed to create film'), 'error');
+    } finally {
+      setSavingFilm(false);
+    }
+  };
+
   const deleteUser = async (id) => {
     if (!confirm('Delete this user?')) return;
     try {
@@ -295,9 +334,40 @@ export default function SuperAdminView() {
 
       {tab === 'films' && (
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          <div className="px-4 sm:px-5 py-3.5 border-b border-slate-800">
+          <div className="px-4 sm:px-5 py-3.5 border-b border-slate-800 flex items-center justify-between gap-3">
             <p className="text-sm font-bold text-slate-200">All Films ({films.length})</p>
+            <Button variant="primary" size="sm" onClick={openCreateFilm}><Plus className="h-3.5 w-3.5" /> Add Film</Button>
           </div>
+
+          <Modal open={showFilmModal} onClose={() => setShowFilmModal(false)} title="Create Film Workspace">
+            <form onSubmit={saveFilm} className="space-y-4">
+              <Input label="Film Title" value={filmForm.title} onChange={e => setFilmForm(f => ({ ...f, title: e.target.value }))} name="title" required placeholder="e.g., Maya Nagari" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Input label="Genre" value={filmForm.genre} onChange={e => setFilmForm(f => ({ ...f, genre: e.target.value }))} name="genre" placeholder="e.g., Drama" />
+                <Input label="Language" value={filmForm.language} onChange={e => setFilmForm(f => ({ ...f, language: e.target.value }))} name="language" options={['Nepali', 'English', 'Hindi', 'Other']} />
+              </div>
+              <Input label="Production Company" value={filmForm.production_company} onChange={e => setFilmForm(f => ({ ...f, production_company: e.target.value }))} name="production_company" placeholder="e.g., Nepal Films" />
+              <Input label="Description" value={filmForm.description} onChange={e => setFilmForm(f => ({ ...f, description: e.target.value }))} name="description" placeholder="Brief description..." />
+              <div className="border-t border-slate-700 pt-4 mt-2">
+                <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">Assign Admin (optional)</p>
+                <div className="space-y-3">
+                  <select value={filmForm.assign_user_id} onChange={e => { const val = e.target.value; setFilmForm(f => ({ ...f, assign_user_id: val, assign_role_id: '' })); const u = users.find(uu => uu.id === Number(val)); if (u?.film_assignments?.[0]) setFilmFormRoles([]); }}
+                    className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm px-3 py-2 rounded-lg focus:outline-none focus:border-amber-500">
+                    <option value="">Select a user...</option>
+                    {users.filter(u => !u.is_super_admin).map(u => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
+                  </select>
+                  <Input label="Department" value={filmForm.assign_department} onChange={e => setFilmForm(f => ({ ...f, assign_department: e.target.value }))} name="assign_department" placeholder="e.g., Production" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="secondary" onClick={() => setShowFilmModal(false)}>Cancel</Button>
+                <Button variant="primary" type="submit" disabled={savingFilm}>
+                  {savingFilm ? <><Loader className="h-3.5 w-3.5 animate-spin" /> Creating...</> : 'Create Film'}
+                </Button>
+              </div>
+            </form>
+          </Modal>
+
           <div className="divide-y divide-slate-800">
             {films.length === 0 && <div className="px-5 py-8 text-center text-slate-500 text-sm">No films found.</div>}
             {films.map(f => (

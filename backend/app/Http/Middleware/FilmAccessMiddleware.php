@@ -30,6 +30,22 @@ class FilmAccessMiddleware
             return response()->json(['message' => 'Film workspace not found or inactive.'], 404);
         }
 
+        // Super Admin bypass — can access any film without being a member
+        if ($request->user() && $request->user()->is_super_admin) {
+            $request->attributes->set('film', $film);
+
+            // Create a virtual film_user entry for the super admin so downstream middleware can rely on it
+            $virtualFilmUser = new \App\Models\FilmUser();
+            $virtualFilmUser->film_id = $film->id;
+            $virtualFilmUser->user_id = $request->user()->id;
+            $virtualFilmUser->role = 'Super Admin';
+            $virtualFilmUser->role_id = null;
+
+            $request->attributes->set('film_user', $virtualFilmUser);
+
+            return $next($request);
+        }
+
         // Check if user is associated with this film
         $filmUser = FilmUser::where('film_id', $film->id)
             ->where('user_id', $request->user()->id)

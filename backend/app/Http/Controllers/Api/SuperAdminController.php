@@ -39,6 +39,109 @@ class SuperAdminController extends Controller
         return response()->json($films);
     }
 
+    public function storeFilm(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'genre' => 'nullable|string',
+            'language' => 'nullable|string',
+            'production_company' => 'nullable|string',
+            'start_date' => 'nullable|date',
+            'expected_wrap_date' => 'nullable|date',
+            'assign_user_id' => 'nullable|integer|exists:users,id',
+            'assign_role_id' => 'nullable|integer|exists:film_roles,id',
+            'assign_department' => 'nullable|string|max:255',
+        ]);
+
+        $user = $request->user();
+
+        return DB::transaction(function () use ($validated, $user, $request) {
+            $slug = \Illuminate\Support\Str::slug($validated['title']);
+            $originalSlug = $slug;
+            $count = 1;
+            while (Film::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $count;
+                $count++;
+            }
+
+            $film = Film::create([
+                'title' => $validated['title'],
+                'slug' => $slug,
+                'description' => $validated['description'] ?? null,
+                'genre' => $validated['genre'] ?? null,
+                'language' => $validated['language'] ?? 'Nepali',
+                'production_company' => $validated['production_company'] ?? null,
+                'start_date' => $validated['start_date'] ?? null,
+                'expected_wrap_date' => $validated['expected_wrap_date'] ?? null,
+                'is_active' => true,
+                'created_by' => $user->id,
+            ]);
+
+            // Create default Admin role for this film
+            $adminRole = \App\Models\FilmRole::create([
+                'film_id' => $film->id,
+                'name' => 'Admin',
+                'slug' => 'admin',
+                'description' => 'Full access to all film features and settings',
+                'is_admin' => true,
+                'permissions' => [],
+                'created_by' => $user->id,
+            ]);
+
+            // Assign the super admin (creator) as a member
+            \App\Models\FilmUser::create([
+                'film_id' => $film->id,
+                'user_id' => $user->id,
+                'role' => 'Super Admin',
+                'role_id' => $adminRole->id,
+                'department' => 'Production',
+                'is_active' => true,
+                'joined_at' => now(),
+            ]);
+
+            // Enable default modules
+            $defaultModules = [
+                'schedule', 'cast_crew', 'expenses', 'call_sheet', 'progress', 'locations',
+                'script', 'script_breakdown', 'shot_list', 'tasks', 'timesheets', 'dpr', 'documents',
+                'messaging', 'wardrobe', 'continuity', 'storyboard', 'production_calendar',
+                'day_out_of_days', 'reports', 'analytics',
+            ];
+            foreach ($defaultModules as $module) {
+                \App\Models\FilmModule::create([
+                    'film_id' => $film->id,
+                    'module_name' => $module,
+                    'is_enabled' => true,
+                ]);
+            }
+
+            // Optionally assign another user as Admin
+            if (!empty($validated['assign_user_id'])) {
+                $targetRoleId = $validated['assign_role_id'] ?? $adminRole->id;
+                $assignRole = \App\Models\FilmRole::where('id', $targetRoleId)
+                    ->where('film_id', $film->id)
+                    ->first();
+
+                if ($assignRole) {
+                    \App\Models\FilmUser::create([
+                        'film_id' => $film->id,
+                        'user_id' => $validated['assign_user_id'],
+                        'role' => $assignRole->name,
+                        'role_id' => $assignRole->id,
+                        'department' => $validated['assign_department'] ?? null,
+                        'is_active' => true,
+                        'joined_at' => now(),
+                    ]);
+                }
+            }
+
+            $film->load('modules');
+            $film->user_role = 'Super Admin';
+
+            return response()->json($film, 201);
+        });
+    }
+
     public function filmDetail($id)
     {
         $film = Film::with(['users', 'modules', 'creator'])

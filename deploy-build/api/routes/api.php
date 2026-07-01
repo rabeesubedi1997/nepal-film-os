@@ -49,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('super.admin')->prefix('super-admin')->group(function () {
         Route::get('/dashboard', [SuperAdminController::class, 'dashboard']);
         Route::get('/films', [SuperAdminController::class, 'films']);
+        Route::post('/films', [SuperAdminController::class, 'storeFilm']);
         Route::get('/films/{id}', [SuperAdminController::class, 'filmDetail']);
         Route::get('/users', [SuperAdminController::class, 'users']);
         Route::get('/users/{id}', [SuperAdminController::class, 'userDetail']);
