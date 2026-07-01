@@ -357,11 +357,12 @@ class SuperAdminController extends Controller
         if (isset($validated['name'])) $data['name'] = $validated['name'];
         if (isset($validated['email'])) $data['email'] = $validated['email'];
         if (!empty($validated['password'])) $data['password'] = bcrypt($validated['password']);
-        if (isset($validated['is_super_admin'])) $data['is_super_admin'] = $validated['is_super_admin'];
+        // Explicitly handle is_super_admin — must set even when false to allow removal
+        $data['is_super_admin'] = $validated['is_super_admin'] ?? $user->is_super_admin;
 
         $user->update($data);
 
-        return response()->json($user);
+        return response()->json($user->fresh());
     }
 
     public function destroyUser($id)
