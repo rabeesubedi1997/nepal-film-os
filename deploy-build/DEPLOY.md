@@ -1,16 +1,43 @@
 # Nepal Film OS — cPanel Deployment Guide
 
+**Live site:** https://filmos.kitetool.com  
+**API:** https://filmos.kitetool.com/api
+
+## Quick Deploy (after each git push)
+
+On the server (SSH or cPanel Terminal):
+
+```bash
+cd ~/repository/nepal-film-os   # or wherever the repo is cloned
+
+# If you get "local changes would be overwritten by merge":
+# git stash
+
+git pull origin main
+
+# Copy frontend build to public_html
+cp -r deploy-build/* ~/public_html/
+# or: rsync -a deploy-build/* ~/public_html/
+```
+
+If you stashed, restore your changes afterward:
+```bash
+git stash pop
+```
+
+---
+
 ## Overview
 
 ```
-yourdomain.com
+filmos.kitetool.com
 │
-├── public_html/           ← React build (frontend/dist/*)
+├── public_html/           ← React build (deploy-build/*)
 │   ├── index.html
 │   ├── assets/
 │   ├── .htaccess          ← React routing (provided)
 │   │
-│   └── api/               ← Laravel backend
+│   └── api/               ← Laravel backend (backend/)
 │       ├── app/
 │       ├── bootstrap/
 │       ├── config/
@@ -26,8 +53,6 @@ yourdomain.com
 │       └── ...
 ```
 
-**Subdomain (recommended):** `api.yourdomain.com` → `public_html/api/public`
-
 ---
 
 ## Step 1 — Prepare Backend
@@ -40,18 +65,17 @@ In cPanel **MySQL® Databases**:
 
 ### 1b. Upload + Configure
 1. Upload the entire `backend/` folder to `public_html/api/`
-2. In cPanel **Subdomains**, create: `api.yourdomain.com` → `public_html/api/public`
-3. Or use cPanel **Aliases** if you want `yourdomain.com/api` instead
-4. Rename `public_html/api/.env.example` to `.env` and edit:
+2. cPanel handles `filmos.kitetool.com/api` automatically (no subdomain needed)
+3. Rename `public_html/api/.env.example` to `.env` and edit:
 
 ```
 APP_NAME="Nepal Film OS"
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://api.yourdomain.com
+APP_URL=https://filmos.kitetool.com
 
-FRONTEND_URL=https://yourdomain.com
-SANCTUM_STATEFUL_DOMAINS=yourdomain.com,api.yourdomain.com
+FRONTEND_URL=https://filmos.kitetool.com
+SANCTUM_STATEFUL_DOMAINS=filmos.kitetool.com
 
 DB_CONNECTION=mysql
 DB_HOST=localhost
@@ -61,7 +85,7 @@ DB_USERNAME=nepalfilm_user
 DB_PASSWORD=your_strong_password
 
 SESSION_DRIVER=file
-SESSION_DOMAIN=.yourdomain.com
+SESSION_DOMAIN=.filmos.kitetool.com
 
 CACHE_STORE=file
 QUEUE_CONNECTION=sync
@@ -90,7 +114,7 @@ chmod -R 775 storage/logs storage/app/public
 ### 2a. Build locally
 Create `frontend/.env.production`:
 ```
-VITE_API_BASE_URL=https://api.yourdomain.com/api
+VITE_API_BASE_URL=https://filmos.kitetool.com/api
 ```
 
 Run:
@@ -99,8 +123,10 @@ cd frontend
 npm run build
 ```
 
-### 2b. Upload
-Upload everything inside `frontend/dist/` to `public_html/`.
+### 2b. Deploy via git (recommended)
+```bash
+cp -r deploy-build/* ~/public_html/
+```
 
 Your `public_html/` should now contain:
 ```
@@ -108,12 +134,14 @@ public_html/
 ├── assets/
 ├── index.html
 ├── .htaccess    ← (create this — see step 3)
-└── api/         ← Laravel (already uploaded)
+└── api/         ← Laravel backend
 ```
 
 ---
 
 ## Step 3 — Create .htaccess Files
+
+> **Already provided** in `deploy-build/.htaccess` — it's copied over with the deploy step above.
 
 ### 3a. `public_html/.htaccess` (React routing)
 ```apache
@@ -161,7 +189,7 @@ Edit `public_html/api/config/cors.php`:
 return [
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
     'allowed_methods' => ['*'],
-    'allowed_origins' => [env('FRONTEND_URL', 'https://yourdomain.com')],
+    'allowed_origins' => [env('FRONTEND_URL', 'https://filmos.kitetool.com')],
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
     'exposed_headers' => [],
@@ -176,10 +204,10 @@ return [
 
 | URL | Expected Result |
 |---|---|
-| `https://yourdomain.com` | React app loads (Landing page) |
-| `https://yourdomain.com/login` | Login page (React routed) |
-| `https://api.yourdomain.com/api/login` | JSON: `{ "token": "...", "user": {...} }` |
-| `https://api.yourdomain.com/api/me` | JSON with auth error (no token) → correct |
+| `https://filmos.kitetool.com` | React app loads (Landing page) |
+| `https://filmos.kitetool.com/login` | Login page (React routed) |
+| `https://filmos.kitetool.com/api/login` | JSON: `{ "token": "...", "user": {...} }` |
+| `https://filmos.kitetool.com/api/me` | JSON with auth error (no token) → correct |
 
 ---
 
@@ -194,8 +222,12 @@ return [
 → Run `php artisan config:clear` and `php artisan cache:clear`
 
 **CORS errors in browser**
-→ Confirm `FRONTEND_URL` in `.env` matches your domain
+→ Confirm `FRONTEND_URL` in `.env` matches your domain (`https://filmos.kitetool.com`)
 → Confirm `config/cors.php` has `'supports_credentials' => true`
+
+**Git pull says "local changes would be overwritten by merge"**
+→ Run `git stash` before `git pull`, then `git stash pop` after
+→ Or run `git checkout deploy-build/index.html` to discard the local change
 
 **Storage files not loading (images, uploads)**
 → Run `php artisan storage:link` in cPanel terminal
