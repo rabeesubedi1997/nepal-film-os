@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\DayOutOfDaysController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\MediaController;
+use App\Http\Controllers\Api\RoleController;
 
 // Public Auth routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -288,5 +289,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Reports (no module check — always available)
         Route::get('/films/{film}/reports/summary', [ReportController::class, 'summary']);
+
+        // Role Management (no module check — always available)
+        Route::get('/films/{film}/roles', [RoleController::class, 'index']);
+        Route::post('/films/{film}/roles', [RoleController::class, 'store']);
+        Route::get('/films/{film}/roles/{roleId}', [RoleController::class, 'show']);
+        Route::put('/films/{film}/roles/{roleId}', [RoleController::class, 'update']);
+        Route::delete('/films/{film}/roles/{roleId}', [RoleController::class, 'destroy']);
     });
+
+    // Available permissions reference (no film access needed)
+    Route::get('/permissions/list', [RoleController::class, 'availablePermissions']);
 });

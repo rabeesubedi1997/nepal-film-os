@@ -85,12 +85,17 @@ class ExpenseController extends Controller
             'currency' => 'nullable|string',
         ]);
 
-        // Check if Producer or Super Admin
         $filmUser = FilmUser::where('film_id', $filmId)
             ->where('user_id', $request->user()->id)
             ->first();
 
-        if (!$filmUser || !in_array($filmUser->role, ['Producer', 'Super Admin', 'Production Manager'])) {
+        $canManageBudget = $filmUser && (
+            $filmUser->isFilmAdmin() ||
+            $filmUser->hasPermission('budget.manage') ||
+            $request->user()->is_super_admin
+        );
+
+        if (!$canManageBudget) {
             return response()->json(['message' => 'Unauthorized to modify budget.'], 403);
         }
 
@@ -166,12 +171,17 @@ class ExpenseController extends Controller
 
         $expense = Expense::where('film_id', $filmId)->findOrFail($id);
 
-        // Check if Producer, PM, or Super Admin
         $filmUser = FilmUser::where('film_id', $filmId)
             ->where('user_id', $request->user()->id)
             ->first();
 
-        if (!$filmUser || !in_array($filmUser->role, ['Producer', 'Super Admin', 'Production Manager'])) {
+        $canApprove = $filmUser && (
+            $filmUser->isFilmAdmin() ||
+            $filmUser->hasPermission('expense.approve') ||
+            $request->user()->is_super_admin
+        );
+
+        if (!$canApprove) {
             return response()->json(['message' => 'Unauthorized to approve expenses.'], 403);
         }
 

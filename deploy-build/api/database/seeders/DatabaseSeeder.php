@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Film;
+use App\Models\FilmRole;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,7 @@ class DatabaseSeeder extends Seeder
         // ── Users ──────────────────────────────────────────────────
         $admin = User::updateOrCreate(
             ['email' => 'admin@nepalfilmos.com'],
-            ['name' => 'Suresh Sharma (Admin)', 'password' => Hash::make('password'), 'is_active' => true]
+            ['name' => 'Suresh Sharma (Admin)', 'password' => Hash::make('password'), 'is_active' => true, 'is_super_admin' => true]
         );
         $director = User::updateOrCreate(
             ['email' => 'director@nepalfilmos.com'],
@@ -60,14 +61,33 @@ class DatabaseSeeder extends Seeder
         ]);
         $film2Id = $film2->id;
 
+        // ── Film Roles ─────────────────────────────────────────────
+        $f1AdminRole = FilmRole::firstOrCreate(
+            ['film_id' => $film1Id, 'slug' => 'admin'],
+            ['name' => 'Admin', 'description' => 'Full access', 'is_admin' => true, 'permissions' => [], 'created_by' => $admin->id]
+        );
+        $f1DirectorRole = FilmRole::firstOrCreate(
+            ['film_id' => $film1Id, 'slug' => 'director'],
+            ['name' => 'Director', 'description' => 'Creative lead', 'is_admin' => false, 'permissions' => ['schedule.view', 'schedule.create', 'schedule.edit', 'scene.view', 'scene.create', 'scene.edit', 'script.view', 'script.create', 'script.edit', 'script_breakdown.view', 'script_breakdown.create', 'script_breakdown.edit', 'shot_list.view', 'shot_list.create', 'shot_list.edit', 'cast_crew.view', 'expense.create', 'progress.view', 'progress.create', 'progress.edit', 'location.view', 'task.view', 'task.create', 'task.edit'], 'created_by' => $admin->id]
+        );
+        $f1PmRole = FilmRole::firstOrCreate(
+            ['film_id' => $film1Id, 'slug' => 'production-manager'],
+            ['name' => 'Production Manager', 'description' => 'Operations lead', 'is_admin' => false, 'permissions' => ['film.invite_users', 'schedule.view', 'schedule.create', 'schedule.edit', 'scene.view', 'scene.create', 'scene.edit', 'script_breakdown.view', 'script_breakdown.create', 'cast_crew.view', 'cast_crew.create', 'cast_crew.edit', 'budget.view', 'budget.manage', 'expense.create', 'expense.edit', 'expense.approve', 'call_sheet.view', 'call_sheet.create', 'call_sheet.edit', 'progress.view', 'progress.create', 'progress.edit', 'location.view', 'location.create', 'location.edit', 'task.view', 'task.create', 'task.edit', 'task.delete', 'timesheet.view', 'timesheet.approve', 'dpr.view', 'dpr.create', 'document.view', 'document.create', 'message.view', 'message.create', 'notification.view', 'notification.mark_read'], 'created_by' => $admin->id]
+        );
+
+        $f2AdminRole = FilmRole::firstOrCreate(
+            ['film_id' => $film2Id, 'slug' => 'admin'],
+            ['name' => 'Admin', 'description' => 'Full access', 'is_admin' => true, 'permissions' => [], 'created_by' => $test->id]
+        );
+
         // ── Film Users (roles per film) ────────────────────────────
         DB::table('film_users')->insertOrIgnore([
-            ['film_id' => $film1Id, 'user_id' => $admin->id,    'role' => 'Producer',            'department' => 'Production', 'is_active' => 1, 'joined_at' => now(), 'created_at' => now(), 'updated_at' => now()],
-            ['film_id' => $film1Id, 'user_id' => $director->id, 'role' => 'Director',             'department' => 'Direction',  'is_active' => 1, 'joined_at' => now(), 'created_at' => now(), 'updated_at' => now()],
-            ['film_id' => $film1Id, 'user_id' => $pm->id,       'role' => 'Production Manager',  'department' => 'Production', 'is_active' => 1, 'joined_at' => now(), 'created_at' => now(), 'updated_at' => now()],
-            ['film_id' => $film1Id, 'user_id' => $test->id,     'role' => 'Producer',            'department' => 'Production', 'is_active' => 1, 'joined_at' => now(), 'created_at' => now(), 'updated_at' => now()],
-            ['film_id' => $film2Id, 'user_id' => $test->id,     'role' => 'Producer',            'department' => 'Production', 'is_active' => 1, 'joined_at' => now(), 'created_at' => now(), 'updated_at' => now()],
-            ['film_id' => $film2Id, 'user_id' => $admin->id,    'role' => 'Production Manager',  'department' => 'Production', 'is_active' => 1, 'joined_at' => now(), 'created_at' => now(), 'updated_at' => now()],
+            ['film_id' => $film1Id, 'user_id' => $admin->id,    'role' => 'Admin',              'role_id' => $f1AdminRole->id,    'department' => 'Production', 'is_active' => 1, 'joined_at' => now(), 'created_at' => now(), 'updated_at' => now()],
+            ['film_id' => $film1Id, 'user_id' => $director->id, 'role' => 'Director',           'role_id' => $f1DirectorRole->id, 'department' => 'Direction',  'is_active' => 1, 'joined_at' => now(), 'created_at' => now(), 'updated_at' => now()],
+            ['film_id' => $film1Id, 'user_id' => $pm->id,       'role' => 'Production Manager', 'role_id' => $f1PmRole->id,       'department' => 'Production', 'is_active' => 1, 'joined_at' => now(), 'created_at' => now(), 'updated_at' => now()],
+            ['film_id' => $film1Id, 'user_id' => $test->id,     'role' => 'Admin',              'role_id' => $f1AdminRole->id,    'department' => 'Production', 'is_active' => 1, 'joined_at' => now(), 'created_at' => now(), 'updated_at' => now()],
+            ['film_id' => $film2Id, 'user_id' => $test->id,     'role' => 'Admin',              'role_id' => $f2AdminRole->id,    'department' => 'Production', 'is_active' => 1, 'joined_at' => now(), 'created_at' => now(), 'updated_at' => now()],
+            ['film_id' => $film2Id, 'user_id' => $admin->id,    'role' => 'Admin',              'role_id' => $f2AdminRole->id,    'department' => 'Production', 'is_active' => 1, 'joined_at' => now(), 'created_at' => now(), 'updated_at' => now()],
         ]);
 
         // ── Modules ────────────────────────────────────────────────

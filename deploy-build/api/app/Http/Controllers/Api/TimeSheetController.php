@@ -115,7 +115,13 @@ class TimeSheetController extends Controller
             ->where('user_id', $request->user()->id)
             ->first();
 
-        if (!$filmUser || !in_array($filmUser->role, ['Producer', 'Super Admin', 'Production Manager'])) {
+        $canApprove = $filmUser && (
+            $filmUser->isFilmAdmin() ||
+            $filmUser->hasPermission('timesheet.approve') ||
+            $request->user()->is_super_admin
+        );
+
+        if (!$canApprove) {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
@@ -144,7 +150,13 @@ class TimeSheetController extends Controller
             ->where('user_id', $request->user()->id)
             ->first();
 
-        if (!$filmUser || !in_array($filmUser->role, ['Producer', 'Super Admin', 'Production Manager'])) {
+        $canReject = $filmUser && (
+            $filmUser->isFilmAdmin() ||
+            $filmUser->hasPermission('timesheet.approve') ||
+            $request->user()->is_super_admin
+        );
+
+        if (!$canReject) {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
