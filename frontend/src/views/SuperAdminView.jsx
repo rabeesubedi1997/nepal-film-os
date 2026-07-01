@@ -222,28 +222,26 @@ export default function SuperAdminView() {
             <p className="text-sm font-bold text-slate-200">All Users ({users.length})</p>
             <Button variant="primary" size="sm" onClick={openCreateUser}><Plus className="h-3.5 w-3.5" /> Add User</Button>
           </div>
-          {showUserModal && (
-            <Modal open={showUserModal} onClose={() => setShowUserModal(false)} title={editUser ? 'Edit User' : 'Add User'}>
-              <form onSubmit={saveUser} className="space-y-4">
-                <Input label="Name" value={userForm.name} onChange={e => setUserForm(f => ({ ...f, name: e.target.value }))} name="name" required placeholder="Full name" />
-                <Input label="Email" type="email" value={userForm.email} onChange={e => setUserForm(f => ({ ...f, email: e.target.value }))} name="email" required placeholder="email@domain.com" />
-                <Input label={editUser ? 'New Password (leave blank to keep)' : 'Password'} type="password" value={userForm.password} onChange={e => setUserForm(f => ({ ...f, password: e.target.value }))} name="password" required={!editUser} placeholder="Min 8 characters" />
-                <label className="flex items-center gap-3 bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 cursor-pointer hover:border-amber-500/50 transition-colors">
-                  <input type="checkbox" checked={userForm.is_super_admin} onChange={e => setUserForm(f => ({ ...f, is_super_admin: e.target.checked }))} className="h-4 w-4 accent-amber-500" />
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">Super Admin</p>
-                    <p className="text-[10px] text-slate-400">Full platform access — can manage all films, users, and settings</p>
-                  </div>
-                </label>
-                <div className="flex justify-end gap-3 pt-2">
-                  <Button variant="secondary" onClick={() => setShowUserModal(false)}>Cancel</Button>
-                  <Button variant="primary" type="submit" disabled={savingUser}>
-                    {savingUser ? <><Loader className="h-3.5 w-3.5 animate-spin" /> Saving...</> : editUser ? 'Update User' : 'Create User'}
-                  </Button>
+          <Modal open={showUserModal} onClose={() => setShowUserModal(false)} title={editUser ? 'Edit User' : 'Add User'}>
+            <form onSubmit={saveUser} className="space-y-4">
+              <Input label="Name" value={userForm.name} onChange={e => setUserForm(f => ({ ...f, name: e.target.value }))} name="name" required placeholder="Full name" />
+              <Input label="Email" type="email" value={userForm.email} onChange={e => setUserForm(f => ({ ...f, email: e.target.value }))} name="email" required placeholder="email@domain.com" />
+              <Input label={editUser ? 'New Password (leave blank to keep)' : 'Password'} type="password" value={userForm.password} onChange={e => setUserForm(f => ({ ...f, password: e.target.value }))} name="password" required={!editUser} placeholder="Min 8 characters" />
+              <label className="flex items-center gap-3 bg-slate-800/60 border border-slate-700 rounded-lg px-4 py-3 cursor-pointer hover:border-amber-500/50 transition-colors">
+                <input type="checkbox" checked={userForm.is_super_admin} onChange={e => setUserForm(f => ({ ...f, is_super_admin: e.target.checked }))} className="h-4 w-4 accent-amber-500" />
+                <div>
+                  <p className="text-sm font-medium text-slate-200">Super Admin</p>
+                  <p className="text-[10px] text-slate-400">Full platform access — can manage all films, users, and settings</p>
                 </div>
-              </form>
-            </Modal>
-          )}
+              </label>
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="secondary" onClick={() => setShowUserModal(false)}>Cancel</Button>
+                <Button variant="primary" type="submit" disabled={savingUser}>
+                  {savingUser ? <><Loader className="h-3.5 w-3.5 animate-spin" /> Saving...</> : editUser ? 'Update User' : 'Create User'}
+                </Button>
+              </div>
+            </form>
+          </Modal>
           <div className="divide-y divide-slate-800">
             {users.length === 0 && <div className="px-5 py-8 text-center text-slate-500 text-sm">No users found.</div>}
             {users.map(u => (
