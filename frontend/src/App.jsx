@@ -39,6 +39,7 @@ import VendorsView from './views/VendorsView';
 import MediaLibraryView from './views/MediaLibraryView';
 import RolesView from './views/RolesView';
 import MembersView from './views/MembersView';
+import SelectFilmView from './views/SelectFilmView';
 
 function AuthGuard({ children }) {
   const { token, user, fetchCurrentUser } = useAuthStore();
@@ -71,6 +72,18 @@ function SuperAdminGuard({ children }) {
 
   if (user && !user.is_super_admin) {
     return <Navigate to="/app/dashboard" replace />;
+  }
+
+  return children;
+}
+
+function FilmGuard({ children }) {
+  const { currentFilm, userFilms, loading } = useAuthStore();
+
+  if (loading) return null;
+
+  if (!currentFilm && userFilms.length > 0) {
+    return <Navigate to="/app/select-film" replace />;
   }
 
   return children;
@@ -140,6 +153,7 @@ export default function App() {
           <Route path="media" element={<MediaLibraryView />} />
           <Route path="roles" element={<RolesView />} />
           <Route path="members" element={<MembersView />} />
+          <Route path="select-film" element={<SelectFilmView />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

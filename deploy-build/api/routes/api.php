@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\FeatureController;
 
 // Public Auth routes (rate limited to prevent brute force)
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:3,60');
@@ -111,7 +112,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/films/{film}', [FilmController::class, 'update']);
         Route::delete('/films/{film}', [FilmController::class, 'destroy']);
 
-        // Modules Toggle (Producer/Admin only)
+        // Feature Management
+        Route::get('/films/{film}/features', [FeatureController::class, 'index']);
+        Route::put('/films/{film}/features/toggle', [FeatureController::class, 'toggle']);
+        Route::put('/films/{film}/features', [FeatureController::class, 'bulkUpdate']);
+
+        // Modules Toggle (legacy — keep for backward compat)
         Route::put('/films/{film}/modules', [FilmController::class, 'toggleModule']);
         Route::post('/films/{film}/invite', [FilmController::class, 'inviteUser']);
 

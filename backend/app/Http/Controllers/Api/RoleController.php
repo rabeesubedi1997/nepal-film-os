@@ -148,104 +148,62 @@ class RoleController extends Controller
 
     public function availablePermissions()
     {
-        $permissions = [
-            ['key' => 'film.view', 'label' => 'View Film', 'group' => 'Film'],
-            ['key' => 'film.edit', 'label' => 'Edit Film Details', 'group' => 'Film'],
-            ['key' => 'film.invite_users', 'label' => 'Invite Users', 'group' => 'Film'],
-            ['key' => 'film.manage_roles', 'label' => 'Manage Roles', 'group' => 'Film'],
-
-            ['key' => 'schedule.view', 'label' => 'View Schedule', 'group' => 'Schedule'],
-            ['key' => 'schedule.create', 'label' => 'Create Schedule Days', 'group' => 'Schedule'],
-            ['key' => 'schedule.edit', 'label' => 'Edit Schedule', 'group' => 'Schedule'],
-            ['key' => 'schedule.delete', 'label' => 'Delete Schedule', 'group' => 'Schedule'],
-
-            ['key' => 'scene.view', 'label' => 'View Scenes', 'group' => 'Scenes'],
-            ['key' => 'scene.create', 'label' => 'Create Scenes', 'group' => 'Scenes'],
-            ['key' => 'scene.edit', 'label' => 'Edit Scenes', 'group' => 'Scenes'],
-            ['key' => 'scene.delete', 'label' => 'Delete Scenes', 'group' => 'Scenes'],
-
-            ['key' => 'script.view', 'label' => 'View Scripts', 'group' => 'Script'],
-            ['key' => 'script.create', 'label' => 'Upload Scripts', 'group' => 'Script'],
-            ['key' => 'script.edit', 'label' => 'Edit Scripts', 'group' => 'Script'],
-            ['key' => 'script.delete', 'label' => 'Delete Scripts', 'group' => 'Script'],
-
-            ['key' => 'script_breakdown.view', 'label' => 'View Breakdown', 'group' => 'Script Breakdown'],
-            ['key' => 'script_breakdown.create', 'label' => 'Add Breakdown Items', 'group' => 'Script Breakdown'],
-            ['key' => 'script_breakdown.edit', 'label' => 'Edit Breakdown', 'group' => 'Script Breakdown'],
-            ['key' => 'script_breakdown.delete', 'label' => 'Delete Breakdown', 'group' => 'Script Breakdown'],
-
-            ['key' => 'shot_list.view', 'label' => 'View Shot List', 'group' => 'Shot List'],
-            ['key' => 'shot_list.create', 'label' => 'Add Shots', 'group' => 'Shot List'],
-            ['key' => 'shot_list.edit', 'label' => 'Edit Shots', 'group' => 'Shot List'],
-            ['key' => 'shot_list.delete', 'label' => 'Delete Shots', 'group' => 'Shot List'],
-
-            ['key' => 'cast_crew.view', 'label' => 'View Cast & Crew', 'group' => 'Cast & Crew'],
-            ['key' => 'cast_crew.create', 'label' => 'Add Cast/Crew', 'group' => 'Cast & Crew'],
-            ['key' => 'cast_crew.edit', 'label' => 'Edit Cast/Crew', 'group' => 'Cast & Crew'],
-            ['key' => 'cast_crew.delete', 'label' => 'Delete Cast/Crew', 'group' => 'Cast & Crew'],
-
-            ['key' => 'budget.view', 'label' => 'View Budget', 'group' => 'Budget'],
-            ['key' => 'budget.manage', 'label' => 'Manage Budgets', 'group' => 'Budget'],
-
-            ['key' => 'expense.create', 'label' => 'Add Expenses', 'group' => 'Expenses'],
-            ['key' => 'expense.edit', 'label' => 'Edit Expenses', 'group' => 'Expenses'],
-            ['key' => 'expense.delete', 'label' => 'Delete Expenses', 'group' => 'Expenses'],
-            ['key' => 'expense.approve', 'label' => 'Approve Expenses', 'group' => 'Expenses'],
-
-            ['key' => 'call_sheet.view', 'label' => 'View Call Sheets', 'group' => 'Call Sheet'],
-            ['key' => 'call_sheet.create', 'label' => 'Create Call Sheets', 'group' => 'Call Sheet'],
-            ['key' => 'call_sheet.edit', 'label' => 'Edit Call Sheets', 'group' => 'Call Sheet'],
-            ['key' => 'call_sheet.delete', 'label' => 'Delete Call Sheets', 'group' => 'Call Sheet'],
-
-            ['key' => 'progress.view', 'label' => 'View Progress', 'group' => 'Progress'],
-            ['key' => 'progress.create', 'label' => 'Add Progress', 'group' => 'Progress'],
-            ['key' => 'progress.edit', 'label' => 'Edit Progress', 'group' => 'Progress'],
-            ['key' => 'progress.delete', 'label' => 'Delete Progress', 'group' => 'Progress'],
-
-            ['key' => 'location.view', 'label' => 'View Locations', 'group' => 'Locations'],
-            ['key' => 'location.create', 'label' => 'Add Locations', 'group' => 'Locations'],
-            ['key' => 'location.edit', 'label' => 'Edit Locations', 'group' => 'Locations'],
-            ['key' => 'location.delete', 'label' => 'Delete Locations', 'group' => 'Locations'],
-
-            ['key' => 'task.view', 'label' => 'View Tasks', 'group' => 'Tasks'],
-            ['key' => 'task.create', 'label' => 'Create Tasks', 'group' => 'Tasks'],
-            ['key' => 'task.edit', 'label' => 'Edit Tasks', 'group' => 'Tasks'],
-            ['key' => 'task.delete', 'label' => 'Delete Tasks', 'group' => 'Tasks'],
-
-            ['key' => 'timesheet.view', 'label' => 'View Time Sheets', 'group' => 'Time Sheets'],
-            ['key' => 'timesheet.create', 'label' => 'Submit Time Sheets', 'group' => 'Time Sheets'],
-            ['key' => 'timesheet.edit', 'label' => 'Edit Time Sheets', 'group' => 'Time Sheets'],
-            ['key' => 'timesheet.delete', 'label' => 'Delete Time Sheets', 'group' => 'Time Sheets'],
-            ['key' => 'timesheet.approve', 'label' => 'Approve Time Sheets', 'group' => 'Time Sheets'],
-
-            ['key' => 'dpr.view', 'label' => 'View DPR', 'group' => 'DPR'],
-            ['key' => 'dpr.create', 'label' => 'Create DPR', 'group' => 'DPR'],
-            ['key' => 'dpr.edit', 'label' => 'Edit DPR', 'group' => 'DPR'],
-            ['key' => 'dpr.delete', 'label' => 'Delete DPR', 'group' => 'DPR'],
-
-            ['key' => 'document.view', 'label' => 'View Documents', 'group' => 'Documents'],
-            ['key' => 'document.create', 'label' => 'Upload Documents', 'group' => 'Documents'],
-            ['key' => 'document.edit', 'label' => 'Edit Documents', 'group' => 'Documents'],
-            ['key' => 'document.delete', 'label' => 'Delete Documents', 'group' => 'Documents'],
-
-            ['key' => 'message.view', 'label' => 'View Messages', 'group' => 'Messaging'],
-            ['key' => 'message.create', 'label' => 'Send Messages', 'group' => 'Messaging'],
-            ['key' => 'message.delete', 'label' => 'Delete Messages', 'group' => 'Messaging'],
-
-            ['key' => 'wardrobe.view', 'label' => 'View Wardrobe', 'group' => 'Wardrobe'],
-            ['key' => 'wardrobe.create', 'label' => 'Add Wardrobe Items', 'group' => 'Wardrobe'],
-            ['key' => 'wardrobe.edit', 'label' => 'Edit Wardrobe', 'group' => 'Wardrobe'],
-            ['key' => 'wardrobe.delete', 'label' => 'Delete Wardrobe', 'group' => 'Wardrobe'],
-
-            ['key' => 'continuity.view', 'label' => 'View Continuity', 'group' => 'Continuity'],
-            ['key' => 'continuity.create', 'label' => 'Add Continuity', 'group' => 'Continuity'],
-            ['key' => 'continuity.edit', 'label' => 'Edit Continuity', 'group' => 'Continuity'],
-            ['key' => 'continuity.delete', 'label' => 'Delete Continuity', 'group' => 'Continuity'],
-
-            ['key' => 'notification.view', 'label' => 'View Notifications', 'group' => 'Notifications'],
-            ['key' => 'notification.mark_read', 'label' => 'Mark Notifications Read', 'group' => 'Notifications'],
+        $groups = \App\Services\PermissionService::getAvailablePermissions();
+        $labelMap = [
+            'film.view' => 'View Film', 'film.edit' => 'Edit Film Details',
+            'film.invite_users' => 'Invite Users', 'film.manage_roles' => 'Manage Roles',
+            'schedule.view' => 'View Schedule', 'schedule.create' => 'Create Schedule Days',
+            'schedule.edit' => 'Edit Schedule', 'schedule.delete' => 'Delete Schedule',
+            'scene.view' => 'View Scenes', 'scene.create' => 'Create Scenes',
+            'scene.edit' => 'Edit Scenes', 'scene.delete' => 'Delete Scenes',
+            'script.view' => 'View Scripts', 'script.create' => 'Upload Scripts',
+            'script.edit' => 'Edit Scripts', 'script.delete' => 'Delete Scripts',
+            'script_breakdown.view' => 'View Breakdown', 'script_breakdown.create' => 'Add Breakdown Items',
+            'script_breakdown.edit' => 'Edit Breakdown', 'script_breakdown.delete' => 'Delete Breakdown',
+            'shot_list.view' => 'View Shot List', 'shot_list.create' => 'Add Shots',
+            'shot_list.edit' => 'Edit Shots', 'shot_list.delete' => 'Delete Shots',
+            'cast_crew.view' => 'View Cast & Crew', 'cast_crew.create' => 'Add Cast/Crew',
+            'cast_crew.edit' => 'Edit Cast/Crew', 'cast_crew.delete' => 'Delete Cast/Crew',
+            'budget.view' => 'View Budget', 'budget.manage' => 'Manage Budgets',
+            'expense.create' => 'Add Expenses', 'expense.edit' => 'Edit Expenses',
+            'expense.delete' => 'Delete Expenses', 'expense.approve' => 'Approve Expenses',
+            'call_sheet.view' => 'View Call Sheets', 'call_sheet.create' => 'Create Call Sheets',
+            'call_sheet.edit' => 'Edit Call Sheets', 'call_sheet.delete' => 'Delete Call Sheets',
+            'progress.view' => 'View Progress', 'progress.create' => 'Add Progress',
+            'progress.edit' => 'Edit Progress', 'progress.delete' => 'Delete Progress',
+            'location.view' => 'View Locations', 'location.create' => 'Add Locations',
+            'location.edit' => 'Edit Locations', 'location.delete' => 'Delete Locations',
+            'task.view' => 'View Tasks', 'task.create' => 'Create Tasks',
+            'task.edit' => 'Edit Tasks', 'task.delete' => 'Delete Tasks',
+            'timesheet.view' => 'View Time Sheets', 'timesheet.create' => 'Submit Time Sheets',
+            'timesheet.edit' => 'Edit Time Sheets', 'timesheet.delete' => 'Delete Time Sheets',
+            'timesheet.approve' => 'Approve Time Sheets',
+            'dpr.view' => 'View DPR', 'dpr.create' => 'Create DPR',
+            'dpr.edit' => 'Edit DPR', 'dpr.delete' => 'Delete DPR',
+            'document.view' => 'View Documents', 'document.create' => 'Upload Documents',
+            'document.edit' => 'Edit Documents', 'document.delete' => 'Delete Documents',
+            'message.view' => 'View Messages', 'message.create' => 'Send Messages',
+            'message.delete' => 'Delete Messages',
+            'wardrobe.view' => 'View Wardrobe', 'wardrobe.create' => 'Add Wardrobe Items',
+            'wardrobe.edit' => 'Edit Wardrobe', 'wardrobe.delete' => 'Delete Wardrobe',
+            'continuity.view' => 'View Continuity', 'continuity.create' => 'Add Continuity',
+            'continuity.edit' => 'Edit Continuity', 'continuity.delete' => 'Delete Continuity',
+            'vendor.view' => 'View Vendors', 'vendor.create' => 'Add Vendors',
+            'vendor.edit' => 'Edit Vendors', 'vendor.delete' => 'Delete Vendors',
+            'notification.view' => 'View Notifications', 'notification.mark_read' => 'Mark Notifications Read',
         ];
 
-        return response()->json($permissions);
+        $result = [];
+        foreach ($groups as $group => $keys) {
+            foreach ($keys as $key) {
+                $result[] = [
+                    'key' => $key,
+                    'label' => $labelMap[$key] ?? $key,
+                    'group' => $group,
+                ];
+            }
+        }
+
+        return response()->json($result);
     }
 }

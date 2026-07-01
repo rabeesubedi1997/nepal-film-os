@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'film.access' => \App\Http\Middleware\FilmAccessMiddleware::class,
             'film.role' => \App\Http\Middleware\FilmRoleMiddleware::class,
             'film.module' => \App\Http\Middleware\ModuleEnabledMiddleware::class,
+            'film.perm' => \App\Http\Middleware\AuthorizeFilmAction::class,
             'super.admin' => \App\Http\Middleware\SuperAdminMiddleware::class,
         ]);
 

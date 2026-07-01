@@ -30,6 +30,7 @@ export const useAuthStore = create((set, get) => ({
       const { user, token } = response.data;
       get().setToken(token);
       set({ user, loading: false });
+      await get().fetchFilms();
       return true;
     } catch (err) {
       set({ error: err.response?.data?.message || 'Registration failed', loading: false });
@@ -44,6 +45,12 @@ export const useAuthStore = create((set, get) => ({
       const { user, token } = response.data;
       get().setToken(token);
       set({ user, loading: false });
+      // Fetch films and auto-select if user has only one
+      await get().fetchFilms();
+      const { userFilms } = get();
+      if (userFilms.length === 1) {
+        await get().selectFilm(userFilms[0].id || userFilms[0].slug);
+      }
       return true;
     } catch (err) {
       set({ error: err.response?.data?.message || 'Login failed', loading: false });
@@ -75,7 +82,7 @@ export const useAuthStore = create((set, get) => ({
     }
   },
 
-  fetchUserFilms: async () => {
+  fetchFilms: async () => {
     set({ loading: true });
     try {
       const response = await api.get('/films');
@@ -97,7 +104,7 @@ export const useAuthStore = create((set, get) => ({
         userRoleId: film.user_role_id,
         userPermissions: film.user_permissions || [],
         userIsAdmin: film.user_is_admin || false,
-        loading: false
+        loading: false,
       });
       return film;
     } catch (err) {
@@ -110,14 +117,13 @@ export const useAuthStore = create((set, get) => ({
     const { currentFilm } = get();
     if (!currentFilm) return;
     try {
-      await api.put(`/films/${currentFilm.id}/modules`, {
+      await api.put(`/films/${currentFilm.id}/features/toggle`, {
         module_name: moduleName,
-        is_enabled: isEnabled
+        is_enabled: isEnabled,
       });
-      // Refresh current film
       await get().selectFilm(currentFilm.id);
     } catch (err) {
       set({ error: 'Failed to toggle module' });
     }
-  }
+  },
 }));

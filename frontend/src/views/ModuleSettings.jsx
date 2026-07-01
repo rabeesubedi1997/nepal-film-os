@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuthStore } from '../authStore';
+import { usePermission } from '../hooks/usePermission';
 import { useToastStore } from '../toastStore';
 import {
   Calendar, Users, DollarSign, Clipboard, Activity, MapPin,
@@ -28,10 +29,9 @@ const MODULES = [
 ];
 
 export default function ModuleSettings() {
-  const { currentFilm, userRole, userIsAdmin, user, toggleModule } = useAuthStore();
+  const { currentFilm, toggleModule } = useAuthStore();
+  const perm = usePermission();
   const addToast = useToastStore(s => s.addToast);
-
-  const isAdmin = userIsAdmin || user?.is_super_admin;
 
   const moduleStatus = (key) => {
     if (!currentFilm?.modules) return true;
@@ -51,14 +51,14 @@ export default function ModuleSettings() {
           <h1 className="text-xl font-bold text-slate-100">Feature Settings</h1>
           <p className="text-sm text-slate-400 mt-1">Enable or disable features for this film workspace</p>
         </div>
-        {isAdmin && (
+        {perm.isAdmin && (
           <span className="flex items-center gap-1.5 text-xs text-amber-500 bg-amber-500/10 px-3 py-1.5 rounded-full font-medium">
             <Shield className="h-3.5 w-3.5" /> Admin Controls
           </span>
         )}
       </div>
 
-      {!isAdmin && (
+      {!perm.isAdmin && (
         <div className="bg-slate-900 rounded-xl border border-slate-800 p-6 text-center">
           <Shield className="h-10 w-10 text-slate-600 mx-auto mb-3" />
           <p className="text-slate-400 text-sm">Only Admins can manage feature settings.</p>
@@ -85,7 +85,7 @@ export default function ModuleSettings() {
                   <p className="text-xs text-slate-500 mt-0.5">{mod.desc}</p>
                 </div>
               </div>
-              {isAdmin && (
+              {perm.isAdmin && (
                 <button onClick={() => handleToggle(mod.key, enabled)}
                   className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-all ${
                     enabled
@@ -97,7 +97,7 @@ export default function ModuleSettings() {
                   {enabled ? 'Enabled' : 'Disabled'}
                 </button>
               )}
-              {!isAdmin && (
+              {!perm.isAdmin && (
                 <span className={`text-xs px-3 py-1.5 rounded-lg ${
                   enabled ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-800 text-slate-500'
                 }`}>

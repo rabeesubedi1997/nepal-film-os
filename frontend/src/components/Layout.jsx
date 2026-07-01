@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../authStore';
+import { usePermission } from '../hooks/usePermission';
 import { useLanguageStore } from '../languageStore';
 import LanguageSwitcher from './LanguageSwitcher';
 import ToastContainer from './Toast';
@@ -13,6 +14,7 @@ import {
 
 export default function Layout() {
   const { currentFilm, userFilms, user, userRole, logout, selectFilm, fetchUserFilms } = useAuthStore();
+  const perm = usePermission();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -21,6 +23,13 @@ export default function Layout() {
 
   React.useEffect(() => { fetchUserFilms(); }, []);
   React.useEffect(() => { initialize(); }, []);
+
+  // Redirect to film selection if user has films but none selected
+  React.useEffect(() => {
+    if (!currentFilm && userFilms.length > 1 && location.pathname !== '/app/select-film') {
+      navigate('/app/select-film');
+    }
+  }, [currentFilm, userFilms, location.pathname]);
 
   const handleLogout = async () => {
     await logout();
@@ -60,16 +69,9 @@ export default function Layout() {
     { name: 'Admin', path: '/app/admin', icon: Settings, moduleKey: null, adminOnly: true, tKey: 'nav.admin' },
   ];
 
-  const isModuleEnabled = (moduleKey) => {
-    if (!moduleKey) return true;
-    if (!currentFilm?.modules) return true;
-    const mod = currentFilm.modules.find(m => m.module_name === moduleKey);
-    return mod ? mod.is_enabled : true;
-  };
-
   const visibleNavItems = navItems.filter(item => {
-    if (!isModuleEnabled(item.moduleKey)) return false;
-    if (item.adminOnly && !user?.is_super_admin) return false;
+    if (!perm.hasModule(item.moduleKey)) return false;
+    if (item.adminOnly && !perm.isSuperAdmin) return false;
     return true;
   });
 
@@ -84,7 +86,7 @@ export default function Layout() {
   React.useEffect(() => {
     if (!currentFilm?.modules) return;
     const item = navItems.find(i => i.path === location.pathname);
-    if (item?.moduleKey && !isModuleEnabled(item.moduleKey)) {
+    if (item?.moduleKey && !perm.hasModule(item.moduleKey)) {
       navigate('/app/dashboard');
     }
   }, [currentFilm?.modules, location.pathname]);
