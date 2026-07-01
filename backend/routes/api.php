@@ -51,12 +51,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/films', [SuperAdminController::class, 'films']);
         Route::get('/films/{id}', [SuperAdminController::class, 'filmDetail']);
         Route::get('/users', [SuperAdminController::class, 'users']);
+        Route::get('/users/{id}', [SuperAdminController::class, 'userDetail']);
         Route::put('/films/{id}/toggle-status', [SuperAdminController::class, 'toggleFilmStatus']);
 
         // User Management
         Route::post('/users', [SuperAdminController::class, 'storeUser']);
         Route::put('/users/{id}', [SuperAdminController::class, 'updateUser']);
         Route::delete('/users/{id}', [SuperAdminController::class, 'destroyUser']);
+
+        // User-Film Assignment
+        Route::post('/users/{userId}/assign-film', [SuperAdminController::class, 'assignUserToFilm']);
+        Route::delete('/users/{userId}/films/{filmId}', [SuperAdminController::class, 'removeUserFromFilm']);
 
         // Subscription Plans
         Route::get('/subscription-plans', [SuperAdminController::class, 'subscriptionPlans']);

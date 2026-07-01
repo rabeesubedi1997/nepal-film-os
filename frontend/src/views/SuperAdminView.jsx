@@ -1,8 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Shield, Film, Users, CreditCard, Plus, Edit3, Trash2, CheckCircle, AlertCircle, ToggleLeft, ToggleRight, Loader, Activity, Key, Mail, Lock } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Shield, Film, Users, CreditCard, Plus, Edit3, Trash2, CheckCircle, AlertCircle, ToggleLeft, ToggleRight, Loader, Activity, X, UserPlus, UserMinus } from 'lucide-react';
 import api from '../api';
 import { Modal, Input, Badge, Button } from '../components/ui';
 import { useToastStore } from '../toastStore';
+
+const getErrMsg = (err, fallback) => {
+  const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message;
+  return msg || fallback;
+};
 
 export default function SuperAdminView() {
   const addToast = useToastStore(s => s.addToast);
@@ -24,6 +29,13 @@ export default function SuperAdminView() {
   const [userForm, setUserForm] = useState({});
   const [savingUser, setSavingUser] = useState(false);
 
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignUserId, setAssignUserId] = useState(null);
+  const [assignForm, setAssignForm] = useState({ film_id: '', role_id: '', department: '' });
+  const [assignRoles, setAssignRoles] = useState([]);
+  const [savingAssign, setSavingAssign] = useState(false);
+  const [removingFilm, setRemovingFilm] = useState(null);
+
   const [toggleLoading, setToggleLoading] = useState(null);
 
   const fetchAll = async () => {
@@ -39,7 +51,11 @@ export default function SuperAdminView() {
       setFilms(filmsRes.data || []);
       setUsers(usersRes.data || []);
       setPlans(plansRes.data || []);
-    } catch (err) { console.error('Failed to load admin data:', err); } finally { setLoading(false); }
+    } catch (err) {
+      addToast(getErrMsg(err, 'Failed to load admin data'), 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchAll(); }, []);
@@ -50,7 +66,11 @@ export default function SuperAdminView() {
       await api.put(`/super-admin/films/${filmId}/toggle-status`);
       fetchAll();
       addToast('Film status toggled');
-    } catch (err) { console.error(err); addToast('Failed to toggle status', 'error'); } finally { setToggleLoading(null); }
+    } catch (err) {
+      addToast(getErrMsg(err, 'Failed to toggle status'), 'error');
+    } finally {
+      setToggleLoading(null);
+    }
   };
 
   const openCreatePlan = () => {
@@ -88,23 +108,33 @@ export default function SuperAdminView() {
       setShowPlanModal(false);
       fetchAll();
       addToast(editPlan ? 'Plan updated' : 'Plan created');
-    } catch (err) { console.error('Failed to save plan:', err); addToast('Failed to save plan', 'error'); } finally { setSavingPlan(false); }
+    } catch (err) {
+      addToast(getErrMsg(err, 'Failed to save plan'), 'error');
+    } finally {
+      setSavingPlan(false);
+    }
   };
 
   const deletePlan = async (id) => {
     if (!confirm('Delete this subscription plan?')) return;
-    try { await api.delete(`/super-admin/subscription-plans/${id}`); fetchAll(); addToast('Plan deleted'); } catch (err) { console.error(err); addToast('Failed to delete plan', 'error'); }
+    try {
+      await api.delete(`/super-admin/subscription-plans/${id}`);
+      fetchAll();
+      addToast('Plan deleted');
+    } catch (err) {
+      addToast(getErrMsg(err, 'Failed to delete plan'), 'error');
+    }
   };
 
   const openCreateUser = () => {
     setEditUser(null);
-    setUserForm({ name: '', email: '', password: '', is_super_admin: false });
+    setUserForm({ name: '', email: '', password: '', is_super_admin: false, film_id: '', role_id: '', department: '' });
     setShowUserModal(true);
   };
 
   const openEditUser = (u) => {
     setEditUser(u);
-    setUserForm({ name: u.name, email: u.email, password: '', is_super_admin: !!u.is_super_admin });
+    setUserForm({ name: u.name, email: u.email, password: '', is_super_admin: !!u.is_super_admin, film_id: '', role_id: '', department: '' });
     setShowUserModal(true);
   };
 
@@ -118,6 +148,13 @@ export default function SuperAdminView() {
         is_super_admin: userForm.is_super_admin,
       };
       if (userForm.password) data.password = userForm.password;
+
+      if (!editUser && userForm.film_id && userForm.role_id) {
+        data.film_id = Number(userForm.film_id);
+        data.role_id = Number(userForm.role_id);
+        if (userForm.department) data.department = userForm.department;
+      }
+
       if (editUser) {
         await api.put(`/super-admin/users/${editUser.id}`, data);
       } else {
@@ -126,12 +163,79 @@ export default function SuperAdminView() {
       setShowUserModal(false);
       fetchAll();
       addToast(editUser ? 'User updated' : 'User created');
-    } catch (err) { console.error('Failed to save user:', err); addToast('Failed to save user', 'error'); } finally { setSavingUser(false); }
+    } catch (err) {
+      addToast(getErrMsg(err, 'Failed to save user'), 'error');
+    } finally {
+      setSavingUser(false);
+    }
   };
 
   const deleteUser = async (id) => {
     if (!confirm('Delete this user?')) return;
-    try { await api.delete(`/super-admin/users/${id}`); fetchAll(); addToast('User deleted'); } catch (err) { console.error(err); addToast('Failed to delete user', 'error'); }
+    try {
+      await api.delete(`/super-admin/users/${id}`);
+      fetchAll();
+      addToast('User deleted');
+    } catch (err) {
+      addToast(getErrMsg(err, 'Failed to delete user'), 'error');
+    }
+  };
+
+  const openAssignFilm = (userId) => {
+    setAssignUserId(userId);
+    setAssignForm({ film_id: '', role_id: '', department: '' });
+    setAssignRoles([]);
+    setShowAssignModal(true);
+  };
+
+  const handleAssignFilmChange = async (filmId) => {
+    setAssignForm(f => ({ ...f, film_id: filmId, role_id: '' }));
+    if (!filmId) { setAssignRoles([]); return; }
+    try {
+      const res = await api.get(`/super-admin/films/${filmId}`);
+      const film = res.data;
+      const roles = await api.get(`/films/${filmId}/roles`);
+      setAssignRoles(roles.data || []);
+    } catch {
+      setAssignRoles([]);
+    }
+  };
+
+  const saveAssignFilm = async (e) => {
+    e.preventDefault();
+    if (!assignForm.film_id || !assignForm.role_id) {
+      addToast('Select a film and role', 'error');
+      return;
+    }
+    setSavingAssign(true);
+    try {
+      await api.post(`/super-admin/users/${assignUserId}/assign-film`, {
+        film_id: Number(assignForm.film_id),
+        role_id: Number(assignForm.role_id),
+        department: assignForm.department || null,
+      });
+      setShowAssignModal(false);
+      fetchAll();
+      addToast('User assigned to film');
+    } catch (err) {
+      addToast(getErrMsg(err, 'Failed to assign user'), 'error');
+    } finally {
+      setSavingAssign(false);
+    }
+  };
+
+  const removeUserFromFilm = async (userId, filmId, filmTitle) => {
+    if (!confirm(`Remove this user from "${filmTitle}"?`)) return;
+    setRemovingFilm(`${userId}-${filmId}`);
+    try {
+      await api.delete(`/super-admin/users/${userId}/films/${filmId}`);
+      fetchAll();
+      addToast('User removed from film');
+    } catch (err) {
+      addToast(getErrMsg(err, 'Failed to remove user'), 'error');
+    } finally {
+      setRemovingFilm(null);
+    }
   };
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-6 w-6 border-2 border-amber-500 border-t-transparent rounded-full" /></div>;
@@ -202,7 +306,7 @@ export default function SuperAdminView() {
                   <div className="bg-blue-500/20 text-blue-400 p-2 rounded-lg shrink-0"><Film className="h-4 w-4" /></div>
                   <div className="min-w-0">
                     <p className="text-sm font-bold text-slate-200 truncate">{f.title}</p>
-                    <p className="text-xs text-slate-500 truncate">{f.production_company || '—'} · {f.status || 'draft'}</p>
+                    <p className="text-xs text-slate-500 truncate">{f.production_company || '\u2014'} \u00B7 {f.status || 'draft'}</p>
                   </div>
                 </div>
                 <button onClick={() => toggleActive(f.id)} disabled={toggleLoading === f.id}
@@ -222,6 +326,7 @@ export default function SuperAdminView() {
             <p className="text-sm font-bold text-slate-200 shrink-0">All Users ({users.length})</p>
             <Button variant="primary" size="sm" onClick={openCreateUser}><Plus className="h-3.5 w-3.5" /> Add User</Button>
           </div>
+
           <Modal open={showUserModal} onClose={() => setShowUserModal(false)} title={editUser ? 'Edit User' : 'Add User'}>
             <form onSubmit={saveUser} className="space-y-4">
               <Input label="Name" value={userForm.name} onChange={e => setUserForm(f => ({ ...f, name: e.target.value }))} name="name" required placeholder="Full name" />
@@ -231,9 +336,23 @@ export default function SuperAdminView() {
                 <input type="checkbox" checked={userForm.is_super_admin} onChange={e => setUserForm(f => ({ ...f, is_super_admin: e.target.checked }))} className="h-4 w-4 accent-amber-500" />
                 <div>
                   <p className="text-sm font-medium text-slate-200">Super Admin</p>
-                  <p className="text-[10px] text-slate-400">Full platform access — can manage all films, users, and settings</p>
+                  <p className="text-[10px] text-slate-400">Full platform access \u2014 can manage all films, users, and settings</p>
                 </div>
               </label>
+              {!editUser && (
+                <div className="border-t border-slate-700 pt-4 mt-2">
+                  <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">Assign to Film (optional)</p>
+                  <div className="space-y-3">
+                    <select value={userForm.film_id} onChange={e => { const val = e.target.value; setUserForm(f => ({ ...f, film_id: val, role_id: '' })); }}
+                      className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm px-3 py-2 rounded-lg focus:outline-none focus:border-amber-500">
+                      <option value="">Select a film...</option>
+                      {films.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
+                    </select>
+                    {userForm.film_id && <FilmRoleDropdown filmId={userForm.film_id} value={userForm.role_id} onChange={v => setUserForm(f => ({ ...f, role_id: v }))} />}
+                    <Input label="Department (optional)" value={userForm.department} onChange={e => setUserForm(f => ({ ...f, department: e.target.value }))} name="department" placeholder="e.g., Production" />
+                  </div>
+                </div>
+              )}
               <div className="flex justify-end gap-3 pt-2">
                 <Button variant="secondary" onClick={() => setShowUserModal(false)}>Cancel</Button>
                 <Button variant="primary" type="submit" disabled={savingUser}>
@@ -242,25 +361,70 @@ export default function SuperAdminView() {
               </div>
             </form>
           </Modal>
+
+          <Modal open={showAssignModal} onClose={() => setShowAssignModal(false)} title="Assign to Film">
+            <form onSubmit={saveAssignFilm} className="space-y-4">
+              <select value={assignForm.film_id} onChange={e => handleAssignFilmChange(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm px-3 py-2 rounded-lg focus:outline-none focus:border-amber-500">
+                <option value="">Select a film...</option>
+                {films.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
+              </select>
+              {assignRoles.length > 0 && (
+                <select value={assignForm.role_id} onChange={e => setAssignForm(f => ({ ...f, role_id: e.target.value }))}
+                  className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm px-3 py-2 rounded-lg focus:outline-none focus:border-amber-500">
+                  <option value="">Select a role...</option>
+                  {assignRoles.map(r => (
+                    <option key={r.id} value={r.id}>{r.name}{r.is_admin ? ' (Admin)' : ''}</option>
+                  ))}
+                </select>
+              )}
+              <Input label="Department (optional)" value={assignForm.department} onChange={e => setAssignForm(f => ({ ...f, department: e.target.value }))} name="department" placeholder="e.g., Production" />
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="secondary" onClick={() => setShowAssignModal(false)}>Cancel</Button>
+                <Button variant="primary" type="submit" disabled={savingAssign}>
+                  {savingAssign ? <><Loader className="h-3.5 w-3.5 animate-spin" /> Assigning...</> : 'Assign'}
+                </Button>
+              </div>
+            </form>
+          </Modal>
+
           <div className="divide-y divide-slate-800">
             {users.length === 0 && <div className="px-5 py-8 text-center text-slate-500 text-sm">No users found.</div>}
             {users.map(u => (
-              <div key={u.id} className="px-4 sm:px-5 py-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center font-bold text-xs text-white shrink-0">
-                    {u.name?.charAt(0) || u.email?.charAt(0) || '?'}
+              <div key={u.id} className="px-4 sm:px-5 py-3 hover:bg-slate-800/30 transition-colors">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center font-bold text-xs text-white shrink-0">
+                      {u.name?.charAt(0) || u.email?.charAt(0) || '?'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-slate-200 truncate">{u.name || 'Unnamed'}</p>
+                      <p className="text-xs text-slate-500 truncate">{u.email}</p>
+                    </div>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-slate-200 truncate">{u.name || 'Unnamed'}</p>
-                    <p className="text-xs text-slate-500 truncate">{u.email}</p>
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                    {u.is_super_admin && <Badge color="red">Super Admin</Badge>}
+                    <span className="text-xs text-slate-500 hidden sm:inline">{u.films_count || 0} films</span>
+                    <Button variant="ghost" size="xs" onClick={() => openAssignFilm(u.id)} title="Assign to film"><UserPlus className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="xs" onClick={() => openEditUser(u)}>Edit</Button>
+                    <Button variant="ghost" size="xs" className="text-red-400 hover:text-red-300" onClick={() => deleteUser(u.id)}>Delete</Button>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  {u.is_super_admin && <Badge color="red">Admin</Badge>}
-                  <span className="text-xs text-slate-500 hidden sm:inline">{u.films_count || 0} films</span>
-                  <Button variant="ghost" size="xs" onClick={() => openEditUser(u)}>Edit</Button>
-                  <Button variant="ghost" size="xs" className="text-red-400 hover:text-red-300" onClick={() => deleteUser(u.id)}>Delete</Button>
-                </div>
+                {u.film_assignments?.length > 0 && (
+                  <div className="mt-2 ml-12 flex flex-wrap gap-1.5">
+                    {u.film_assignments.map(fa => (
+                      <span key={`${u.id}-${fa.film_id}`} className="inline-flex items-center gap-1 text-[10px] bg-slate-800 border border-slate-700 rounded-full px-2 py-0.5 text-slate-300">
+                        <Film className="h-2.5 w-2.5 text-amber-400" />
+                        {fa.film_title}
+                        <span className="text-slate-600">({fa.role_name})</span>
+                        <button onClick={() => removeUserFromFilm(u.id, fa.film_id, fa.film_title)} disabled={removingFilm === `${u.id}-${fa.film_id}`}
+                          className="p-0.5 text-slate-600 hover:text-red-400 disabled:opacity-50">
+                          {removingFilm === `${u.id}-${fa.film_id}` ? <Loader className="h-2.5 w-2.5 animate-spin" /> : <X className="h-2.5 w-2.5" />}
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -290,8 +454,8 @@ export default function SuperAdminView() {
                   </div>
                 </div>
                 <div className="text-xs text-slate-400 space-y-1">
-                  <p><span className="text-slate-500">Billing:</span> {p.billing_cycle || '—'}</p>
-                  {p.features && <p className="text-slate-400 mt-2 bg-slate-800/60 rounded-lg p-3 border border-slate-700/50 whitespace-pre-line break-words">{p.features}</p>}
+                  <p><span className="text-slate-500">Billing:</span> {p.billing_cycle || '\u2014'}</p>
+                  {p.features && <p className="text-slate-400 mt-2 bg-slate-800/60 rounded-lg p-3 border border-slate-700/50 whitespace-pre-line break-words">{Array.isArray(p.features) ? p.features.join('\n') : p.features}</p>}
                 </div>
               </div>
             ))}
@@ -306,15 +470,32 @@ export default function SuperAdminView() {
               </div>
               <Input label="Features" value={planForm.features} onChange={e => setPlanForm(f => ({ ...f, features: e.target.value }))} name="features" placeholder="Feature 1&#10;Feature 2&#10;Feature 3" />
               <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" onClick={() => setShowPlanModal(false)}>Cancel</Button>
-            <Button variant="primary" type="submit" disabled={savingPlan}>
-              {savingPlan ? <><Loader className="h-3.5 w-3.5 animate-spin" /> Saving...</> : editPlan ? 'Update Plan' : 'Create Plan'}
-            </Button>
+                <Button variant="secondary" onClick={() => setShowPlanModal(false)}>Cancel</Button>
+                <Button variant="primary" type="submit" disabled={savingPlan}>
+                  {savingPlan ? <><Loader className="h-3.5 w-3.5 animate-spin" /> Saving...</> : editPlan ? 'Update Plan' : 'Create Plan'}
+                </Button>
               </div>
             </form>
           </Modal>
         </div>
       )}
     </div>
+  );
+}
+
+function FilmRoleDropdown({ filmId, value, onChange }) {
+  const [roles, setRoles] = useState([]);
+  useEffect(() => {
+    if (!filmId) { setRoles([]); return; }
+    api.get(`/films/${filmId}/roles`).then(r => setRoles(r.data || [])).catch(() => setRoles([]));
+  }, [filmId]);
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)}
+      className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm px-3 py-2 rounded-lg focus:outline-none focus:border-amber-500">
+      <option value="">Select a role...</option>
+      {roles.map(r => (
+        <option key={r.id} value={r.id}>{r.name}{r.is_admin ? ' (Admin)' : ''}</option>
+      ))}
+    </select>
   );
 }
