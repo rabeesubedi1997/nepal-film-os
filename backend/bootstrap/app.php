@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         channels: __DIR__.'/../routes/channels.php',
         health: '/up',
     )
+    ->withCommands([
+        \App\Console\Commands\RepairFilmRoles::class,
+    ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'film.access' => \App\Http\Middleware\FilmAccessMiddleware::class,
