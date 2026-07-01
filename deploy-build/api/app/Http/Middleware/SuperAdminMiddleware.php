@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 
 use Closure;
-use App\Models\FilmUser;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -13,13 +12,15 @@ class SuperAdminMiddleware
     {
         $user = $request->user();
 
-        $isSuperAdmin = FilmUser::where('user_id', $user->id)
-            ->where('role', 'Super Admin')
-            ->where('is_active', true)
-            ->exists();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated. Please log in again.'], 401);
+        }
 
-        if (!$isSuperAdmin) {
-            return response()->json(['message' => 'Unauthorized. Super Admin access required.'], 403);
+        if (!$user->is_super_admin) {
+            return response()->json([
+                'message' => 'Unauthorized. Super Admin access required.',
+                'hint' => "User '{$user->email}' is not a super admin. Run: php artisan user:make-super-admin {$user->email}",
+            ], 403);
         }
 
         return $next($request);

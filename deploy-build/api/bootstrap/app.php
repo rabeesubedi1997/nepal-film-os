@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withCommands([
         \App\Console\Commands\RepairFilmRoles::class,
+        \App\Console\Commands\MakeSuperAdmin::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
