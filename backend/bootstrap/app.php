@@ -28,5 +28,27 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: ['api/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        $exceptions->shouldRenderJsonWhen(function () {
+            return true;
+        });
+
+        $exceptions->render(function (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
+        });
+
+        $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            return response()->json([
+                'message' => $e->getMessage() ?: 'An error occurred.',
+            ], $e->getStatusCode());
+        });
+
+        $exceptions->render(function (\Throwable $e) {
+            $debug = config('app.debug');
+            return response()->json([
+                'message' => $debug ? $e->getMessage() : 'An unexpected error occurred.',
+            ], $debug ? 500 : 500);
+        });
     })->create();

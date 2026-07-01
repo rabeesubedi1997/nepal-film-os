@@ -324,10 +324,11 @@ class FilmController extends Controller
         $targetUser = User::where('email', $validated['email'])->first();
 
         if (!$targetUser) {
+            $tempPassword = Str::random(12);
             $targetUser = User::create([
                 'name' => explode('@', $validated['email'])[0],
                 'email' => $validated['email'],
-                'password' => bcrypt('password'),
+                'password' => bcrypt($tempPassword),
                 'is_active' => true,
             ]);
         }
@@ -541,7 +542,6 @@ class FilmController extends Controller
                 $targetUser,
                 $film,
                 $filmRole,
-                $validated['password'] ?? 'password'
             ));
         } catch (\Exception $e) {
             // Mail not configured - silently continue

@@ -32,9 +32,9 @@ use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\RoleController;
 
-// Public Auth routes
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+// Public Auth routes (rate limited to prevent brute force)
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:3,60');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,60');
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {

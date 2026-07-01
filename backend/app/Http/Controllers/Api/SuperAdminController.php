@@ -345,6 +345,14 @@ class SuperAdminController extends Controller
             'is_super_admin' => 'nullable|boolean',
         ]);
 
+        // Prevent creating duplicate super admin
+        if (!empty($validated['is_super_admin']) && !$user->is_super_admin) {
+            $existing = User::where('id', '!=', $user->id)->where('is_super_admin', true)->exists();
+            if ($existing) {
+                return response()->json(['message' => 'A super admin already exists.'], 409);
+            }
+        }
+
         $data = [];
         if (isset($validated['name'])) $data['name'] = $validated['name'];
         if (isset($validated['email'])) $data['email'] = $validated['email'];

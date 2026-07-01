@@ -20,7 +20,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|unique:users,email|max:255',
             'phone' => 'nullable|string|max:20',
-            'password' => 'required|string|min:6|confirmed',
+            'password' => 'required|string|min:8|confirmed',
             'preferred_language' => 'nullable|string|in:English,Nepali',
             'timezone' => 'nullable|string',
         ]);
@@ -54,12 +54,8 @@ class AuthController extends Controller
         ]);
 
         $user = User::where('email', $validated['email'])->first();
-        // Log lookup result
-        \Log::info('Login attempt', ['email' => $validated['email'], 'user_found' => $user ? true : false]);
 
         if (!$user || !\Hash::check($validated['password'], $user->password)) {
-            // Log credential check failure
-            \Log::warning('Login failed', ['email' => $validated['email'], 'password_match' => $user ? \Hash::check($validated['password'], $user->password) : false]);
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
