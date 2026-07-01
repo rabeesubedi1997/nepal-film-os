@@ -13,10 +13,9 @@ const statusColors = {
   rejected: 'red',
 };
 
-const canApprove = (role) => ['Producer', 'Super Admin', 'Production Manager'].includes(role);
-
 export default function TimeSheetsView() {
-  const { currentFilm, user, userRole } = useAuthStore();
+  const { currentFilm, user, userRole, userIsAdmin, userPermissions } = useAuthStore();
+  const canApprove = userIsAdmin || user?.is_super_admin || (userPermissions || []).includes('timesheet.approve');
   const addToast = useToastStore(s => s.addToast);
   const filmId = currentFilm?.id;
 
@@ -180,7 +179,7 @@ export default function TimeSheetsView() {
               {paginated.map(ts => {
                 const hours = calcHours(ts);
                 const isCreator = user?.id === ts.user_id;
-                const isApprover = canApprove(userRole);
+                    const isApprover = canApprove;
                 return (
                   <tr key={ts.id} className="hover:bg-slate-800/40">
                     <td className="px-4 py-3">

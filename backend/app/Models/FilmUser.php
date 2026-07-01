@@ -12,6 +12,7 @@ class FilmUser extends Model
         'film_id',
         'user_id',
         'role',
+        'role_id',
         'department',
         'permissions',
         'is_active',
@@ -32,5 +33,31 @@ class FilmUser extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function filmRole()
+    {
+        return $this->belongsTo(FilmRole::class, 'role_id');
+    }
+
+    public function hasPermission($permission)
+    {
+        if ($this->filmRole) {
+            return $this->filmRole->hasPermission($permission);
+        }
+        return false;
+    }
+
+    public function hasAnyPermission(array $permissions)
+    {
+        if ($this->filmRole) {
+            return $this->filmRole->hasAnyPermission($permissions);
+        }
+        return false;
+    }
+
+    public function isFilmAdmin()
+    {
+        return $this->filmRole && $this->filmRole->is_admin;
     }
 }

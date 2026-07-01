@@ -8,8 +8,6 @@ import Pagination from '../components/Pagination';
 
 const statusBadgeMap = { Paid: 'green', Approved: 'blue', Pending: 'amber', Rejected: 'red' };
 
-const canApproveExpense = (role) => ['Producer', 'Super Admin', 'Production Manager'].includes(role);
-
 const statusConfig = {
   'Paid': { icon: CheckCircle, color: 'text-emerald-400' },
   'Approved': { icon: CheckCircle, color: 'text-blue-400' },
@@ -18,7 +16,9 @@ const statusConfig = {
 };
 
 export default function BudgetExpensesView() {
-  const { currentFilm, userRole } = useAuthStore();
+  const { currentFilm, userRole, userIsAdmin, userPermissions, user } = useAuthStore();
+  const canApproveExpense = userIsAdmin || user?.is_super_admin || (userPermissions || []).includes('expense.approve');
+  const canManageBudget = userIsAdmin || user?.is_super_admin || (userPermissions || []).includes('budget.manage');
   const addToast = useToastStore(s => s.addToast);
   const filmId = currentFilm?.id;
 
@@ -268,7 +268,7 @@ export default function BudgetExpensesView() {
           <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
             <div className="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
               <h3 className="text-sm font-bold text-slate-200">Department Budgets</h3>
-              <button onClick={openCreateBudget} className="text-xs text-emerald-500 font-semibold flex items-center gap-1"><Plus className="h-3 w-3" /> Add Budget</button>
+              {canManageBudget && <button onClick={openCreateBudget} className="text-xs text-emerald-500 font-semibold flex items-center gap-1"><Plus className="h-3 w-3" /> Add Budget</button>}
             </div>
             <div className="divide-y divide-slate-800">
               {budgets.length === 0 && <div className="px-5 py-8 text-center text-slate-500 text-sm">No budgets set yet.</div>}
@@ -283,8 +283,8 @@ export default function BudgetExpensesView() {
                       <div className="flex items-center gap-3">
                         <span className="text-xs text-slate-500 font-mono">NPR {(spent / 1000).toFixed(0)}K / {(b.budgeted_amount / 1000).toFixed(0)}K</span>
                         <span className={`text-xs font-black w-10 text-right ${pct > 80 ? 'text-red-400' : pct > 60 ? 'text-amber-400' : 'text-emerald-400'}`}>{pct}%</span>
-                        <button onClick={() => openEditBudget(b)} className="p-1 text-slate-500 hover:text-amber-400"><Edit3 className="h-3 w-3" /></button>
-                        <button onClick={() => deleteBudget(b.id)} className="p-1 text-slate-500 hover:text-red-400"><Trash2 className="h-3 w-3" /></button>
+                        {canManageBudget && <button onClick={() => openEditBudget(b)} className="p-1 text-slate-500 hover:text-amber-400"><Edit3 className="h-3 w-3" /></button>}
+                        {canManageBudget && <button onClick={() => deleteBudget(b.id)} className="p-1 text-slate-500 hover:text-red-400"><Trash2 className="h-3 w-3" /></button>}
                       </div>
                     </div>
                     <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
@@ -402,7 +402,7 @@ export default function BudgetExpensesView() {
                   {paginatedExpenses.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500 text-sm">No expenses found.</td></tr>}
                   {paginatedExpenses.map(exp => {
                     const sc = statusConfig[exp.status] || statusConfig['Pending'];
-                    const isApprover = canApproveExpense(userRole);
+                    const isApprover = canApproveExpense;
                     const canEdit = exp.status === 'Pending';
                     return (
                       <tr key={exp.id} className="hover:bg-slate-800/40">

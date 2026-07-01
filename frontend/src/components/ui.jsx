@@ -96,6 +96,7 @@ export function Button({ children, variant = 'secondary', size = 'default', onCl
   const sizes = {
     default: 'px-4 py-2 text-sm',
     sm: 'px-3 py-1.5 text-xs',
+    xs: 'px-2 py-1 text-[10px]',
     icon: 'p-2',
   };
   return (

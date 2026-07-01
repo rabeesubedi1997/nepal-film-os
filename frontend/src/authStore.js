@@ -7,6 +7,9 @@ export const useAuthStore = create((set, get) => ({
   currentFilm: null,
   userRole: null,
   userDepartment: null,
+  userRoleId: null,
+  userPermissions: [],
+  userIsAdmin: false,
   userFilms: [],
   loading: false,
   error: null,
@@ -55,7 +58,7 @@ export const useAuthStore = create((set, get) => ({
       // Ignore network errors on logout
     }
     get().setToken(null);
-    set({ user: null, currentFilm: null, userRole: null, userFilms: [] });
+    set({ user: null, currentFilm: null, userRole: null, userRoleId: null, userPermissions: [], userIsAdmin: false, userFilms: [] });
   },
 
   fetchCurrentUser: async () => {
@@ -91,6 +94,9 @@ export const useAuthStore = create((set, get) => ({
         currentFilm: film,
         userRole: film.user_role,
         userDepartment: film.user_department,
+        userRoleId: film.user_role_id,
+        userPermissions: film.user_permissions || [],
+        userIsAdmin: film.user_is_admin || false,
         loading: false
       });
       return film;

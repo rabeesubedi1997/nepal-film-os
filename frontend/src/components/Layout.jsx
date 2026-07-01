@@ -8,7 +8,7 @@ import {
   Film, Calendar, Users, DollarSign, Clipboard, Activity,
   LogOut, Home, MapPin, CheckSquare, FileText, MessageSquare,
   Bell, Clock, Layers, BarChart2, Camera, Menu, X, Settings, ToggleLeft, Image,
-  BarChart3, Building2
+  BarChart3, Building2, Shield
 } from 'lucide-react';
 
 export default function Layout() {
@@ -55,7 +55,8 @@ export default function Layout() {
     { name: 'Media Library', path: '/app/media', icon: Image, moduleKey: null, tKey: 'nav.media' },
     { name: 'News', path: '/app/news', icon: Bell, moduleKey: null, tKey: 'nav.news' },
     { name: 'Feature Settings', path: '/app/settings', icon: ToggleLeft, moduleKey: null, tKey: 'nav.settings' },
-    { name: 'Admin', path: '/app/admin', icon: Settings, moduleKey: null, tKey: 'nav.admin' },
+    { name: 'Roles & Permissions', path: '/app/roles', icon: Shield, moduleKey: null, tKey: 'nav.roles' },
+    { name: 'Admin', path: '/app/admin', icon: Settings, moduleKey: null, adminOnly: true, tKey: 'nav.admin' },
   ];
 
   const isModuleEnabled = (moduleKey) => {
@@ -65,7 +66,11 @@ export default function Layout() {
     return mod ? mod.is_enabled : true;
   };
 
-  const visibleNavItems = navItems.filter(item => isModuleEnabled(item.moduleKey));
+  const visibleNavItems = navItems.filter(item => {
+    if (!isModuleEnabled(item.moduleKey)) return false;
+    if (item.adminOnly && !user?.is_super_admin) return false;
+    return true;
+  });
 
   const activeItem = visibleNavItems.find(item => item.path === location.pathname);
 

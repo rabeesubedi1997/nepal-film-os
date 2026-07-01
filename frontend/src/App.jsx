@@ -37,6 +37,7 @@ import ReportsHubView from './views/ReportsHubView';
 import AnalyticsView from './views/AnalyticsView';
 import VendorsView from './views/VendorsView';
 import MediaLibraryView from './views/MediaLibraryView';
+import RolesView from './views/RolesView';
 
 function AuthGuard({ children }) {
   const { token, user, fetchCurrentUser } = useAuthStore();
@@ -126,6 +127,7 @@ export default function App() {
           <Route path="vendors" element={<VendorsView />} />
           <Route path="analytics" element={<AnalyticsView />} />
           <Route path="media" element={<MediaLibraryView />} />
+          <Route path="roles" element={<RolesView />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

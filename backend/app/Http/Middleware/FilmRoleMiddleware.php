@@ -10,8 +10,10 @@ class FilmRoleMiddleware
 {
     /**
      * Handle an incoming request.
+     * Usage: film.role:permission1,permission2 or film.role:role1,role2
+     * Prefix with "perm:" to check permissions, otherwise checks roles.
      */
-    public function handle(Request $request, Closure $next, ...$roles): Response
+    public function handle(Request $request, Closure $next, ...$checks): Response
     {
         $filmUser = $request->attributes->get('film_user');
 
@@ -19,17 +21,45 @@ class FilmRoleMiddleware
             return response()->json(['message' => 'Unauthorized. Film context not found.'], 403);
         }
 
-        // If roles is empty, allow access
-        if (empty($roles)) {
+        if (empty($checks)) {
             return $next($request);
         }
 
-        // Super Admin gets access to everything
-        if ($filmUser->role === 'Super Admin') {
+        // Super Admin bypass
+        if ($request->user() && $request->user()->is_super_admin) {
             return $next($request);
         }
 
-        if (!in_array($filmUser->role, $roles)) {
+        // Film Admin bypass (is_admin role)
+        if ($filmUser->isFilmAdmin()) {
+            return $next($request);
+        }
+
+        // Check if this is a permission check (prefixed with "perm:")
+        $isPermissionCheck = false;
+        foreach ($checks as $check) {
+            if (str_starts_with($check, 'perm:')) {
+                $isPermissionCheck = true;
+                break;
+            }
+        }
+
+        if ($isPermissionCheck) {
+            $permissions = array_map(function ($c) {
+                return str_starts_with($c, 'perm:') ? substr($c, 5) : $c;
+            }, $checks);
+
+            foreach ($permissions as $permission) {
+                if ($filmUser->hasPermission($permission)) {
+                    return $next($request);
+                }
+            }
+
+            return response()->json(['message' => 'Unauthorized. Missing required permission.'], 403);
+        }
+
+        // Legacy role-based check
+        if (!in_array($filmUser->role, $checks)) {
             return response()->json(['message' => 'Unauthorized. You do not have the required role.'], 403);
         }
 
