@@ -6,6 +6,8 @@ import {
   BarChart3, Camera, ToggleLeft, Image, Building2, LogIn, Star,
   ChevronRight, Menu, X, Shield, Smartphone, Globe, Cloud, ArrowRight
 } from 'lucide-react';
+import SeoHead from '../components/SeoHead'
+import { OrganizationLd, SoftwareAppLd, WebSiteLd } from '../components/JsonLd'
 
 const features = [
   { slug: 'shooting-schedule', icon: Calendar, name: 'Shooting Schedule', desc: 'Plan and manage your entire production timeline with drag-and-drop scheduling, scene assignments, and real-time updates.', color: 'text-blue-400', bg: 'bg-blue-500/10', long: 'Our Shooting Schedule module gives you a complete overview of your production timeline. Drag-and-drop scenes onto shoot days, assign cast and crew, manage call times and wrap times, and track the status of each shoot day. Integrated with locations, weather data, and crew availability to eliminate scheduling conflicts.' },
@@ -50,6 +52,11 @@ export default function Landing() {
   };
 
   return (
+    <>
+      <SeoHead />
+      <OrganizationLd />
+      <SoftwareAppLd />
+      <WebSiteLd />
     <div className="min-h-screen bg-slate-950 text-slate-100 overflow-x-hidden">
       {/* ── Navbar ───────────────────────────────────── */}
       <nav className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50">
@@ -209,5 +216,6 @@ export default function Landing() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

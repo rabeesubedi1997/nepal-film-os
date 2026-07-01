@@ -1,2 +1,6 @@
 User-agent: *
-Disallow:
+Disallow: /app/
+Disallow: /api/
+Disallow: /storage/
+
+Sitemap: https://filmos.kitetool.com/sitemap.xml

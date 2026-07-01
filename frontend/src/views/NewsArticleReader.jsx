@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ExternalLink, Calendar, User, Globe, Newspaper, Loader } from 'lucide-react';
 import { newsService } from '../services/newsService';
+import SeoHead from '../components/SeoHead'
 
 export default function NewsArticleReader() {
   const { id } = useParams();
@@ -48,7 +49,21 @@ export default function NewsArticleReader() {
     );
   }
 
+  const articleJsonLd = article ? {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: article.title,
+    description: article.description || article.content?.slice(0, 200),
+    image: article.image_url,
+    author: article.author_name ? { '@type': 'Person', name: article.author_name } : undefined,
+    datePublished: article.published_at,
+    publisher: { '@type': 'Organization', name: 'Nepal Film OS' },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `https://filmos.kitetool.com/app/news/${id}` },
+  } : null
+
   return (
+    <>
+      <SeoHead title={article.title} description={article.description || `Read ${article.title} on Nepal Film OS`} image={article.image_url} url={`/app/news/${id}`} type="article" publishedTime={article.published_at} author={article.author_name} jsonLd={articleJsonLd} />
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
       {/* Back */}
       <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-amber-400 transition-colors">
@@ -120,5 +135,6 @@ export default function NewsArticleReader() {
         </button>
       </div>
     </div>
+    </>
   );
 }

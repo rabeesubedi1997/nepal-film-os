@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../authStore';
 import { Film, Lock, Mail, Loader } from 'lucide-react';
+import SeoHead from '../components/SeoHead'
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -20,6 +21,8 @@ export default function Login() {
   };
 
   return (
+    <>
+      <SeoHead title="Sign In" description="Sign in to Nepal Film OS and manage your film production workflow." url="/login" />
     <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         
@@ -76,5 +79,6 @@ export default function Login() {
 
       </div>
     </div>
+    </>
   );
 }

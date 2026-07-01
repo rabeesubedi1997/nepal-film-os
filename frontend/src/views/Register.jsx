@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../authStore';
 import { Film, User, Lock, Mail, Phone, Loader } from 'lucide-react';
+import SeoHead from '../components/SeoHead'
 
 export default function Register() {
   const [name, setName] = useState('');
@@ -35,6 +36,8 @@ export default function Register() {
   };
 
   return (
+    <>
+      <SeoHead title="Create Account" description="Create your free Nepal Film OS account and start managing your film production." url="/register" />
     <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         
@@ -106,5 +109,6 @@ export default function Register() {
 
       </div>
     </div>
+    </>
   );
 }

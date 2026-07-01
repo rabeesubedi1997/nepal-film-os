@@ -6,6 +6,7 @@ import {
   BarChart3, Camera, ToggleLeft, Image, Building2, LogIn, Star,
   ChevronLeft, ChevronRight, ArrowRight, Check, Shield
 } from 'lucide-react';
+import SeoHead from '../components/SeoHead'
 
 const features = [
   { slug: 'shooting-schedule', icon: Calendar, name: 'Shooting Schedule', color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', gradient: 'from-blue-500/10',
@@ -137,6 +138,8 @@ export default function FeatureDetail() {
 
   if (!feature) {
     return (
+      <>
+        <SeoHead title="Feature Not Found" url={`/features/${slug}`} />
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
         <div className="text-center max-w-md">
           <Film className="h-12 w-12 text-slate-700 mx-auto mb-4" />
@@ -147,7 +150,8 @@ export default function FeatureDetail() {
           </Link>
         </div>
       </div>
-    );
+    </>
+  );
   }
 
   const currentIndex = features.findIndex(f => f.slug === slug);
@@ -157,6 +161,8 @@ export default function FeatureDetail() {
   const Icon = feature.icon;
 
   return (
+    <>
+      <SeoHead title={`${feature.name} Module — Film Production Feature`} description={feature.desc} url={`/features/${feature.slug}`} />
     <div className="min-h-screen bg-slate-950 text-slate-100 overflow-x-hidden">
       {/* ── Navbar ───────────────────────────────────── */}
       <nav className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/50">
@@ -312,5 +318,6 @@ export default function FeatureDetail() {
         </div>
       </footer>
     </div>
+    </>
   );
 }
