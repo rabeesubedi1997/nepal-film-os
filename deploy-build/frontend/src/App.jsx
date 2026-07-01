@@ -66,6 +66,16 @@ function GuestGuard({ children }) {
   return children;
 }
 
+function SuperAdminGuard({ children }) {
+  const { user } = useAuthStore();
+
+  if (user && !user.is_super_admin) {
+    return <Navigate to="/app/dashboard" replace />;
+  }
+
+  return children;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -118,7 +128,7 @@ export default function App() {
           <Route path="news" element={<NewsFeedView />} />
           <Route path="news/:id" element={<NewsArticleReader />} />
           <Route path="series" element={<SeriesView />} />
-          <Route path="admin" element={<SuperAdminView />} />
+          <Route path="admin" element={<SuperAdminGuard><SuperAdminView /></SuperAdminGuard>} />
           <Route path="settings" element={<ModuleSettings />} />
           <Route path="scripts" element={<ScriptEditor />} />
           <Route path="production-calendar" element={<ProductionCalendar />} />
