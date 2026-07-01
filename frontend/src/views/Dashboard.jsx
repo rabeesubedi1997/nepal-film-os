@@ -15,7 +15,7 @@ function ProgressBar({ value, max, color = 'bg-amber-500' }) {
 }
 
 export default function Dashboard() {
-  const { currentFilm, userFilms, fetchUserFilms, selectFilm } = useAuthStore();
+  const { currentFilm, userFilms, fetchFilms, selectFilm } = useAuthStore();
   const addToast = useToastStore(s => s.addToast);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -34,7 +34,7 @@ export default function Dashboard() {
   const [castCrew, setCastCrew] = useState([]);
   const [progressUpdates, setProgressUpdates] = useState([]);
 
-  useEffect(() => { fetchUserFilms(); }, []);
+  useEffect(() => { fetchFilms(); }, []);
 
   useEffect(() => {
     if (!currentFilm?.id) { setLoading(false); return; }
@@ -66,7 +66,7 @@ export default function Dashboard() {
       const res = await api.post('/films', { title: newTitle, description: newDesc, genre: newGenre, production_company: newCompany, start_date: startDate || null, expected_wrap_date: wrapDate || null });
       setShowCreateModal(false);
       setNewTitle(''); setNewDesc(''); setNewGenre(''); setNewCompany(''); setStartDate(''); setWrapDate('');
-      await fetchUserFilms();
+      await fetchFilms();
       await selectFilm(res.data.id);
       addToast('Film workspace created');
     } catch (err) {

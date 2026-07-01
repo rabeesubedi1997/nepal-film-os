@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 
 export default function Layout() {
-  const { currentFilm, userFilms, user, userRole, logout, selectFilm, fetchUserFilms } = useAuthStore();
+  const { currentFilm, userFilms, user, userRole, logout, selectFilm, fetchFilms } = useAuthStore();
   const perm = usePermission();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const location = useLocation();
@@ -21,7 +21,7 @@ export default function Layout() {
 
   const { t, initialize } = useLanguageStore();
 
-  React.useEffect(() => { fetchUserFilms(); }, []);
+  React.useEffect(() => { fetchFilms(); }, []);
   React.useEffect(() => { initialize(); }, []);
 
   // Redirect to film selection if user has films but none selected
