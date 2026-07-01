@@ -89,8 +89,12 @@ class ScriptController extends Controller
     {
         if (empty($script->content)) return;
 
+        $plainText = strip_tags($script->content);
+        $plainText = html_entity_decode($plainText, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $plainText = preg_replace('/&nbsp;/', ' ', $plainText);
+
         $parser = app(FountainParser::class);
-        $parsedScenes = $parser->parse($script->content);
+        $parsedScenes = $parser->parse($plainText);
 
         if (empty($parsedScenes)) return;
 

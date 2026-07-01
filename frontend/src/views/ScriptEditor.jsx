@@ -1,17 +1,34 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
+import TextAlign from '@tiptap/extension-text-align';
+import Placeholder from '@tiptap/extension-placeholder';
+import LinkExtension from '@tiptap/extension-link';
 import { scriptService } from '../services/scriptService';
 import { useAuthStore } from '../authStore';
 import { useToastStore } from '../toastStore';
-import { parseFountain, fountainToHtml } from '../utils/fountainParser';
 import echo from '../echo';
 import {
   Plus, Eye, Trash2, Save, FileText,
   Loader, BookOpen, Code, Upload, Download, Printer, Users, Scissors,
-  ListOrdered, Sun, Moon, Sunrise, Sunset, RefreshCw
+  ListOrdered, Sun, Moon, Sunrise, Sunset, RefreshCw,
+  Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3,
+  List, ListOrdered as ListOrderedIcon, Quote, Minus, Link, AlignLeft, AlignCenter, AlignRight,
+  RemoveFormatting
 } from 'lucide-react';
 
 const DEFAULT_TITLE = 'Untitled Script';
-const EMPTY_CONTENT = 'INT. ROOM - DAY\n\nA desk is covered in papers.\n\nWRITER\n(quietly)\nTime to write.\n\nFADE OUT.';
+const EMPTY_CONTENT = '<p>INT. ROOM - DAY</p><p>A desk is covered in papers.</p><p><br></p><p><strong>WRITER</strong></p><p><em>(quietly)</em></p><p>Time to write.</p><p><br></p><p>FADE OUT.</p>';
+
+const MenuButton = ({ onClick, active, children, title }) => (
+  <button type="button" onClick={onClick} title={title}
+    className={`p-1.5 rounded transition-colors ${active ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>
+    {children}
+  </button>
+);
+
+const Divider = () => <div className="w-px h-5 bg-slate-700 mx-1" />;
 
 export default function ScriptEditor() {
   const { currentFilm } = useAuthStore();
@@ -23,8 +40,8 @@ export default function ScriptEditor() {
   const [scripts, setScripts] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
   const [showPreview, setShowPreview] = useState(true);
+  const [showSource, setShowSource] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -34,6 +51,25 @@ export default function ScriptEditor() {
   const [extracting, setExtracting] = useState(false);
   const [splitHeading, setSplitHeading] = useState('');
   const [showSplitInput, setShowSplitInput] = useState(null);
+
+  const editor = useEditor({
+    extensions: [
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+      }),
+      Underline,
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Placeholder.configure({ placeholder: 'Start writing your script...' }),
+      LinkExtension.configure({ openOnClick: false }),
+    ],
+    content: '',
+    onUpdate: () => { setDirty(true); },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm max-w-none prose-invert focus:outline-none min-h-[200px] p-4 rounded-xl bg-slate-900 border border-slate-700 focus-within:border-amber-500',
+      },
+    },
+  });
 
   const fetchScripts = useCallback(async () => {
     if (!filmId) return;
@@ -53,7 +89,7 @@ export default function ScriptEditor() {
     channel.listen('.ScriptUpdated', (e) => {
       if (e.scriptId === activeId && !dirty) {
         setTitle(e.title);
-        setContent(e.content);
+        editor?.commands.setContent(e.content);
       }
       setCollaborators(prev => {
         const exists = prev.find(c => c.name === e.userName);
@@ -67,6 +103,8 @@ export default function ScriptEditor() {
     return () => { channel.stopListening('.ScriptUpdated'); };
   }, [filmId, activeId, dirty]);
 
+  const contentHtml = editor?.getHTML() || '';
+
   const activeScript = scripts.find(s => s.id === activeId);
 
   const handleSelect = async (id) => {
@@ -75,26 +113,30 @@ export default function ScriptEditor() {
     try {
       const res = await scriptService.show(filmId, id);
       const s = res.data;
-      setActiveId(s.id); setTitle(s.title); setContent(s.content || '');
+      setActiveId(s.id); setTitle(s.title);
+      editor?.commands.setContent(s.content || '');
     } catch { addToast('Failed to load script', 'error'); }
     setLoading(false);
   };
 
   const handleNew = () => {
     if (dirty) { if (!confirm('Discard unsaved changes?')) return; }
-    setActiveId(null); setTitle(DEFAULT_TITLE); setContent(EMPTY_CONTENT); setDirty(false);
+    setActiveId(null); setTitle(DEFAULT_TITLE);
+    editor?.commands.setContent(EMPTY_CONTENT);
+    setDirty(false);
   };
 
   const handleSave = async () => {
     if (!title.trim()) { addToast('Script needs a title', 'error'); return; }
     setSaving(true);
     try {
+      const data = { title, content: contentHtml };
       if (activeId) {
-        const res = await scriptService.update(filmId, activeId, { title, content });
+        const res = await scriptService.update(filmId, activeId, data);
         setScripts(prev => prev.map(s => s.id === activeId ? { ...s, ...res.data, updated_at: new Date().toISOString() } : s));
         addToast('Script saved');
       } else {
-        const res = await scriptService.store(filmId, { title, content });
+        const res = await scriptService.store(filmId, data);
         setScripts(prev => [res.data, ...prev]);
         setActiveId(res.data.id);
         addToast('Script created');
@@ -110,7 +152,7 @@ export default function ScriptEditor() {
     try {
       await scriptService.destroy(filmId, id);
       setScripts(prev => prev.filter(s => s.id !== id));
-      if (activeId === id) { setActiveId(null); setTitle(''); setContent(''); setDirty(false); }
+      if (activeId === id) { setActiveId(null); setTitle(''); editor?.commands.setContent(''); setDirty(false); }
       addToast('Script deleted');
     } catch { addToast('Failed to delete script', 'error'); }
   };
@@ -126,7 +168,7 @@ export default function ScriptEditor() {
       } else if (ext === 'docx') {
         const mammoth = await import('mammoth');
         const buf = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer: buf });
+        const result = await mammoth.convertToHtml({ arrayBuffer: buf });
         text = result.value;
       } else if (ext === 'pdf') {
         const pdfjs = await import('pdfjs-dist');
@@ -139,8 +181,8 @@ export default function ScriptEditor() {
         const pages = [];
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          pages.push(content.items.map(item => item.str).join(' '));
+          const t = await page.getTextContent();
+          pages.push(t.items.map(item => item.str).join(' '));
         }
         text = pages.join('\n\n');
       } else {
@@ -150,7 +192,7 @@ export default function ScriptEditor() {
       if (dirty) { if (!confirm('Replace current content with imported text?')) return; }
       const baseName = file.name.replace(/\.[^.]+$/, '');
       setTitle(baseName);
-      setContent(text);
+      editor?.commands.setContent(text.startsWith('<') ? text : text.split('\n').map(l => `<p>${l}</p>`).join(''));
       setActiveId(null);
       setDirty(true);
       addToast(`Imported "${file.name}"`);
@@ -161,8 +203,9 @@ export default function ScriptEditor() {
   };
 
   const handleExportFountain = () => {
-    if (!content && !title) { addToast('Nothing to export', 'error'); return; }
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    if (!contentHtml && !title) { addToast('Nothing to export', 'error'); return; }
+    const plainText = contentHtml.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\n\s*\n/g, '\n\n').trim();
+    const blob = new Blob([plainText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -173,8 +216,9 @@ export default function ScriptEditor() {
   };
 
   const handleExportTxt = () => {
-    if (!content && !title) { addToast('Nothing to export', 'error'); return; }
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    if (!contentHtml && !title) { addToast('Nothing to export', 'error'); return; }
+    const plainText = contentHtml.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
+    const blob = new Blob([plainText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -185,25 +229,24 @@ export default function ScriptEditor() {
   };
 
   const handlePrintPdf = () => {
-    if (!content) { addToast('Nothing to print', 'error'); return; }
+    if (!contentHtml) { addToast('Nothing to print', 'error'); return; }
     const w = window.open('', '_blank');
+    const printContent = contentHtml
+      .replace(/<p>/g, '<p style="margin:0 0 0.5em 0;line-height:1.5;">')
+      .replace(/<h1>/g, '<h1 style="font-size:14pt;font-weight:700;margin:1em 0 0.5em 0;text-transform:uppercase;">')
+      .replace(/<h2>/g, '<h2 style="font-size:12pt;font-weight:700;margin:1em 0 0.5em 0;">')
+      .replace(/<h3>/g, '<h3 style="font-size:11pt;font-weight:600;margin:0.5em 0;">');
     w.document.write(`<!DOCTYPE html><html><head><title>${title || 'Script'}</title>
 <style>
   @page { margin: 0.5in; size: letter; }
   body { font-family: 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5; color: #000; max-width: 6.5in; margin: 0 auto; }
-  .scene-heading { text-transform: uppercase; font-weight: 700; margin-top: 1.5em; margin-bottom: 0.5em; text-decoration: underline; text-underline-offset: 2px; }
-  .action { margin-bottom: 0.5em; }
-  .character { text-transform: uppercase; margin-top: 1em; margin-left: 3em; font-weight: 600; }
-  .dialogue-block { margin-left: 2em; margin-right: 2em; }
-  .dialogue { margin-bottom: 0.25em; }
-  .parenthetical { margin-left: 3.5em; font-style: italic; margin-bottom: 0.25em; }
-  .transition { text-transform: uppercase; text-align: right; margin-top: 1em; margin-bottom: 0.5em; }
-  .centered { text-align: center; margin: 1em 0; }
-  .blank-line { height: 1em; }
-  .section { font-weight: 700; margin: 1em 0; }
-  .synopsis { font-style: italic; color: #666; margin: 0.5em 0; }
+  p { margin: 0 0 0.5em 0; line-height: 1.5; }
+  h1, h2, h3 { margin: 1em 0 0.5em 0; }
+  h1 { font-size: 14pt; font-weight: 700; text-transform: uppercase; }
+  blockquote { margin-left: 2em; font-style: italic; }
+  ul, ol { margin: 0.5em 0; padding-left: 2em; }
 </style></head><body>
-${fountainToHtml(parseFountain(content))}
+${printContent}
 <p style="margin-top:2em;text-align:center;font-size:10pt;color:#999;">Generated by Nepal Film OS</p>
 </body></html>`);
     w.document.close();
@@ -274,7 +317,16 @@ ${fountainToHtml(parseFountain(content))}
     return Sun;
   };
 
-  const renderPreview = () => ({ __html: fountainToHtml(parseFountain(content)) });
+  const toggleLink = () => {
+    if (!editor) return;
+    const prev = editor.getAttributes('link').href;
+    const url = window.prompt('Link URL', prev || 'https://');
+    if (url === null) return;
+    if (url === '') { editor.chain().focus().unsetLink().run(); return; }
+    editor.chain().focus().setLink({ href: url }).run();
+  };
+
+  if (!editor) return null;
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
@@ -283,12 +335,17 @@ ${fountainToHtml(parseFountain(content))}
         <div className="flex items-center gap-1.5">
           {(title || activeId !== null) && (
             <>
-              <button onClick={() => setShowPreview(!showPreview)}
+              <button onClick={() => { setShowSource(false); setShowPreview(!showPreview); }}
                 className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg transition-all ${
-                  showPreview ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                  showPreview && !showSource ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
                 }`}>
-                {showPreview ? <Eye className="h-3.5 w-3.5" /> : <Code className="h-3.5 w-3.5" />}
-                {showPreview ? 'Preview' : 'Source'}
+                <Eye className="h-3.5 w-3.5" /> Preview
+              </button>
+              <button onClick={() => { setShowPreview(false); setShowSource(!showSource); }}
+                className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg transition-all ${
+                  showSource ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                }`}>
+                <Code className="h-3.5 w-3.5" /> Source
               </button>
               <button onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-1 text-xs px-2.5 py-1.5 bg-slate-800 text-slate-400 rounded-lg hover:text-slate-200 transition-all">
@@ -363,30 +420,62 @@ ${fountainToHtml(parseFountain(content))}
                 </button>
               </div>
 
-              <div className="flex-1 flex gap-3 min-h-0">
-                <div className="flex-1 flex flex-col">
-                  <div className="flex items-center justify-between mb-1 shrink-0">
-                    <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Editor</span>
-                    <span className="text-xs text-slate-600">{content.length} chars</span>
+              {!showPreview && !showSource && (
+                <>
+                  <div className="flex items-center flex-wrap gap-0.5 mb-1.5 px-1 py-1 bg-slate-900 rounded-lg border border-slate-800">
+                    <MenuButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Bold"><Bold className="h-3.5 w-3.5" /></MenuButton>
+                    <MenuButton onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="Italic"><Italic className="h-3.5 w-3.5" /></MenuButton>
+                    <MenuButton onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} title="Underline"><UnderlineIcon className="h-3.5 w-3.5" /></MenuButton>
+                    <MenuButton onClick={toggleLink} active={editor.isActive('link')} title="Link"><Link className="h-3.5 w-3.5" /></MenuButton>
+                    <Divider />
+                    <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} title="Heading 1"><Heading1 className="h-3.5 w-3.5" /></MenuButton>
+                    <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} title="Heading 2"><Heading2 className="h-3.5 w-3.5" /></MenuButton>
+                    <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })} title="Heading 3"><Heading3 className="h-3.5 w-3.5" /></MenuButton>
+                    <Divider />
+                    <MenuButton onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet List"><List className="h-3.5 w-3.5" /></MenuButton>
+                    <MenuButton onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Ordered List"><ListOrderedIcon className="h-3.5 w-3.5" /></MenuButton>
+                    <MenuButton onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="Blockquote"><Quote className="h-3.5 w-3.5" /></MenuButton>
+                    <Divider />
+                    <MenuButton onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })} title="Align Left"><AlignLeft className="h-3.5 w-3.5" /></MenuButton>
+                    <MenuButton onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })} title="Align Center"><AlignCenter className="h-3.5 w-3.5" /></MenuButton>
+                    <MenuButton onClick={() => editor.chain().focus().setTextAlign('right').run()} active={editor.isActive({ textAlign: 'right' })} title="Align Right"><AlignRight className="h-3.5 w-3.5" /></MenuButton>
+                    <Divider />
+                    <MenuButton onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Horizontal Rule"><Minus className="h-3.5 w-3.5" /></MenuButton>
+                    <MenuButton onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Clear Formatting"><RemoveFormatting className="h-3.5 w-3.5" /></MenuButton>
                   </div>
-                  <textarea value={content} onChange={e => { setContent(e.target.value); setDirty(true); }}
-                    placeholder="Write in Fountain format..."
-                    className="flex-1 bg-slate-900 border border-slate-700 text-slate-200 text-sm p-4 rounded-xl focus:outline-none focus:border-amber-500 resize-none font-mono leading-relaxed placeholder:text-slate-600" />
-                </div>
+                </>
+              )}
 
-                {showPreview && (
+              <div className="flex-1 flex gap-3 min-h-0">
+                {showSource ? (
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex items-center justify-between mb-1 shrink-0">
+                      <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">HTML Source</span>
+                      <span className="text-xs text-slate-600">{contentHtml.length} chars</span>
+                    </div>
+                    <textarea value={contentHtml} onChange={e => { editor?.commands.setContent(e.target.value); setDirty(true); }}
+                      className="flex-1 bg-slate-900 border border-slate-700 text-slate-200 text-xs p-4 rounded-xl focus:outline-none focus:border-amber-500 resize-none font-mono leading-relaxed" />
+                  </div>
+                ) : showPreview ? (
                   <div className="flex-1 flex flex-col">
                     <div className="flex items-center justify-between mb-1 shrink-0">
                       <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Preview</span>
-                      <span className="text-xs text-slate-600">{parseFountain(content).filter(e => e.type !== 'blank').length} elements</span>
+                      <span className="text-xs text-slate-600">Rich text</span>
                     </div>
-                    <div ref={previewRef} className="flex-1 bg-white rounded-xl p-8 overflow-y-auto prose-script"
-                      dangerouslySetInnerHTML={renderPreview()} />
+                    <div ref={previewRef} className="flex-1 bg-white rounded-xl p-8 overflow-y-auto prose max-w-none"
+                      dangerouslySetInnerHTML={{ __html: contentHtml }} />
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex items-center justify-between mb-1 shrink-0">
+                      <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Editor</span>
+                      <span className="text-xs text-slate-600">{editor.storage.characterCount?.characters?.() || contentHtml.replace(/<[^>]*>/g, '').length} chars</span>
+                    </div>
+                    <EditorContent editor={editor} className="flex-1 overflow-y-auto" />
                   </div>
                 )}
               </div>
 
-              {/* Scenes Panel */}
               <div className="mt-3 bg-slate-900 border border-slate-800 rounded-xl">
                 <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-800">
                   <div className="flex items-center gap-2">
