@@ -15,16 +15,16 @@ export function Modal({ open, onClose, title, children, size = 'md' }) {
   if (!open) return null;
   const sizes = { sm: 'max-w-md', md: 'max-w-lg', lg: 'max-w-2xl', xl: 'max-w-4xl', full: 'max-w-5xl' };
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 overflow-y-auto" onClick={handleBackdrop}>
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className={`bg-slate-900 border border-slate-700 rounded-xl w-full ${sizes[size] || sizes.md} ${size === 'xl' || size === 'full' ? '' : 'max-h-[85vh] overflow-y-auto'}`} onClick={e => e.stopPropagation()}>
-          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-800">
-            <h2 className="text-sm font-semibold text-slate-100">{title}</h2>
-            <button onClick={onClose} className="p-1 rounded hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors">
+    <div className="fixed inset-0 z-50 bg-black/70" onClick={handleBackdrop}>
+      <div className="flex items-center justify-center min-h-screen p-2 sm:p-4">
+        <div className={`bg-slate-900 border border-slate-700 rounded-xl w-full mx-auto ${sizes[size] || sizes.md} max-h-[95vh] sm:max-h-[90vh] flex flex-col`} onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-slate-800 shrink-0">
+            <h2 className="text-sm font-semibold text-slate-100 truncate pr-2">{title}</h2>
+            <button onClick={onClose} className="p-1 rounded hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors shrink-0">
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="p-5">{children}</div>
+          <div className="p-4 sm:p-5 overflow-y-auto">{children}</div>
         </div>
       </div>
     </div>

@@ -147,7 +147,7 @@ export default function SuperAdminView() {
         </div>
       </div>
 
-      <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1 w-fit">
+      <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1 overflow-x-auto">
         {[
           { value: 'overview', label: 'Overview', icon: Activity },
           { value: 'films', label: 'Films', icon: Film },
@@ -157,8 +157,8 @@ export default function SuperAdminView() {
           const Icon = v.icon;
           return (
             <button key={v.value} onClick={() => setTab(v.value)}
-              className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${tab === v.value ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-slate-200'}`}>
-              <Icon className="h-3.5 w-3.5" /> {v.label}
+              className={`shrink-0 px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${tab === v.value ? 'bg-amber-500 text-slate-950' : 'text-slate-400 hover:text-slate-200'}`}>
+              <Icon className="h-3.5 w-3.5" /> <span className="hidden sm:inline">{v.label}</span><span className="sm:hidden">{v.label}</span>
             </button>
           );
         })}
@@ -191,24 +191,24 @@ export default function SuperAdminView() {
 
       {tab === 'films' && (
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-slate-800">
+          <div className="px-4 sm:px-5 py-3.5 border-b border-slate-800">
             <p className="text-sm font-bold text-slate-200">All Films ({films.length})</p>
           </div>
           <div className="divide-y divide-slate-800">
             {films.length === 0 && <div className="px-5 py-8 text-center text-slate-500 text-sm">No films found.</div>}
             {films.map(f => (
-              <div key={f.id} className="px-5 py-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-500/20 text-blue-400 p-2 rounded-lg"><Film className="h-4 w-4" /></div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-200">{f.title}</p>
-                    <p className="text-xs text-slate-500">{f.production_company || '—'} · {f.status || 'draft'}</p>
+              <div key={f.id} className="px-4 sm:px-5 py-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="bg-blue-500/20 text-blue-400 p-2 rounded-lg shrink-0"><Film className="h-4 w-4" /></div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-200 truncate">{f.title}</p>
+                    <p className="text-xs text-slate-500 truncate">{f.production_company || '—'} · {f.status || 'draft'}</p>
                   </div>
                 </div>
                 <button onClick={() => toggleActive(f.id)} disabled={toggleLoading === f.id}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${f.is_active ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500 border border-slate-700'} hover:opacity-80 disabled:opacity-50`}>
+                  className={`shrink-0 flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${f.is_active ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500 border border-slate-700'} hover:opacity-80 disabled:opacity-50`}>
                   {toggleLoading === f.id ? <Loader className="h-3.5 w-3.5 animate-spin" /> : f.is_active ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />}
-                  {f.is_active ? 'Active' : 'Inactive'}
+                  <span className="hidden sm:inline">{f.is_active ? 'Active' : 'Inactive'}</span>
                 </button>
               </div>
             ))}
@@ -218,8 +218,8 @@ export default function SuperAdminView() {
 
       {tab === 'users' && (
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-slate-800 flex justify-between items-center">
-            <p className="text-sm font-bold text-slate-200">All Users ({users.length})</p>
+          <div className="px-4 sm:px-5 py-3.5 border-b border-slate-800 flex justify-between items-center gap-3">
+            <p className="text-sm font-bold text-slate-200 shrink-0">All Users ({users.length})</p>
             <Button variant="primary" size="sm" onClick={openCreateUser}><Plus className="h-3.5 w-3.5" /> Add User</Button>
           </div>
           <Modal open={showUserModal} onClose={() => setShowUserModal(false)} title={editUser ? 'Edit User' : 'Add User'}>
@@ -245,19 +245,19 @@ export default function SuperAdminView() {
           <div className="divide-y divide-slate-800">
             {users.length === 0 && <div className="px-5 py-8 text-center text-slate-500 text-sm">No users found.</div>}
             {users.map(u => (
-              <div key={u.id} className="px-5 py-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors">
-                <div className="flex items-center gap-3">
+              <div key={u.id} className="px-4 sm:px-5 py-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   <div className="h-9 w-9 rounded-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center font-bold text-xs text-white shrink-0">
                     {u.name?.charAt(0) || u.email?.charAt(0) || '?'}
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-200">{u.name || 'Unnamed'}</p>
-                    <p className="text-xs text-slate-500">{u.email}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-200 truncate">{u.name || 'Unnamed'}</p>
+                    <p className="text-xs text-slate-500 truncate">{u.email}</p>
                   </div>
                 </div>
-                  <div className="flex items-center gap-2">
-                  {u.is_super_admin && <Badge color="red">Super Admin</Badge>}
-                  <span className="text-xs text-slate-500">{u.films_count || 0} films</span>
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                  {u.is_super_admin && <Badge color="red">Admin</Badge>}
+                  <span className="text-xs text-slate-500 hidden sm:inline">{u.films_count || 0} films</span>
                   <Button variant="ghost" size="xs" onClick={() => openEditUser(u)}>Edit</Button>
                   <Button variant="ghost" size="xs" className="text-red-400 hover:text-red-300" onClick={() => deleteUser(u.id)}>Delete</Button>
                 </div>
@@ -275,23 +275,23 @@ export default function SuperAdminView() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {plans.length === 0 && <div className="col-span-full text-center py-12 text-slate-500 text-sm">No subscription plans yet.</div>}
             {plans.map(p => (
-              <div key={p.id} className="bg-slate-900 border border-slate-800 rounded-xl p-5 hover:border-slate-700 transition-colors">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-amber-500/20 text-amber-400 p-2 rounded-lg"><CreditCard className="h-4 w-4" /></div>
-                    <div>
-                      <p className="text-sm font-bold text-slate-200">{p.name}</p>
+              <div key={p.id} className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 hover:border-slate-700 transition-colors">
+                <div className="flex items-start justify-between mb-3 gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="bg-amber-500/20 text-amber-400 p-2 rounded-lg shrink-0"><CreditCard className="h-4 w-4" /></div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-200 truncate">{p.name}</p>
                       <p className="text-lg font-black text-amber-400">NPR {p.price_npr?.toLocaleString() || p.price?.toLocaleString() || 0}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button onClick={() => openEditPlan(p)} className="p-1.5 text-slate-500 hover:text-amber-400 rounded-lg"><Edit3 className="h-3.5 w-3.5" /></button>
                     <button onClick={() => deletePlan(p.id)} className="p-1.5 text-slate-500 hover:text-red-400 rounded-lg"><Trash2 className="h-3.5 w-3.5" /></button>
                   </div>
                 </div>
                 <div className="text-xs text-slate-400 space-y-1">
                   <p><span className="text-slate-500">Billing:</span> {p.billing_cycle || '—'}</p>
-                  {p.features && <p className="text-slate-400 mt-2 bg-slate-800/60 rounded-lg p-3 border border-slate-700/50 whitespace-pre-line">{p.features}</p>}
+                  {p.features && <p className="text-slate-400 mt-2 bg-slate-800/60 rounded-lg p-3 border border-slate-700/50 whitespace-pre-line break-words">{p.features}</p>}
                 </div>
               </div>
             ))}
@@ -300,7 +300,7 @@ export default function SuperAdminView() {
           <Modal open={showPlanModal} onClose={() => setShowPlanModal(false)} title={editPlan ? 'Edit Plan' : 'Add Subscription Plan'}>
             <form onSubmit={savePlan} className="space-y-4">
               <Input label="Plan Name" value={planForm.name} onChange={e => setPlanForm(f => ({ ...f, name: e.target.value }))} name="name" required placeholder="e.g., Premium" />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input label="Price (NPR)" type="number" step="0.01" value={planForm.price_npr} onChange={e => setPlanForm(f => ({ ...f, price_npr: e.target.value }))} name="price_npr" required placeholder="999" />
                 <Input label="Billing Cycle" value={planForm.billing_cycle} onChange={e => setPlanForm(f => ({ ...f, billing_cycle: e.target.value }))} name="billing_cycle" options={['monthly', 'quarterly', 'yearly', 'one-time']} required />
               </div>
