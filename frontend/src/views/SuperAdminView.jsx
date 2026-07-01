@@ -69,7 +69,7 @@ export default function SuperAdminView() {
     setToggleLoading(filmId);
     try {
       await api.put(`/super-admin/films/${filmId}/toggle-status`);
-      fetchAll();
+      await fetchAll();
       addToast('Film status toggled');
     } catch (err) {
       addToast(getErrMsg(err, 'Failed to toggle status'), 'error');
@@ -111,7 +111,7 @@ export default function SuperAdminView() {
         await api.post('/super-admin/subscription-plans', data);
       }
       setShowPlanModal(false);
-      fetchAll();
+      await fetchAll();
       addToast(editPlan ? 'Plan updated' : 'Plan created');
     } catch (err) {
       addToast(getErrMsg(err, 'Failed to save plan'), 'error');
@@ -124,7 +124,7 @@ export default function SuperAdminView() {
     if (!confirm('Delete this subscription plan?')) return;
     try {
       await api.delete(`/super-admin/subscription-plans/${id}`);
-      fetchAll();
+      await fetchAll();
       addToast('Plan deleted');
     } catch (err) {
       addToast(getErrMsg(err, 'Failed to delete plan'), 'error');
@@ -161,12 +161,14 @@ export default function SuperAdminView() {
       }
 
       if (editUser) {
-        await api.put(`/super-admin/users/${editUser.id}`, data);
+        const res = await api.put(`/super-admin/users/${editUser.id}`, data);
+        // Immediately update users list
+        setUsers(prev => prev.map(u => u.id === editUser.id ? { ...u, ...res.data } : u));
       } else {
         await api.post('/super-admin/users', data);
       }
       setShowUserModal(false);
-      fetchAll();
+      await fetchAll();
       addToast(editUser ? 'User updated' : 'User created');
     } catch (err) {
       addToast(getErrMsg(err, 'Failed to save user'), 'error');
@@ -198,9 +200,10 @@ export default function SuperAdminView() {
         if (filmForm.assign_role_id) data.assign_role_id = Number(filmForm.assign_role_id);
         if (filmForm.assign_department) data.assign_department = filmForm.assign_department;
       }
-      await api.post('/super-admin/films', data);
+      const res = await api.post('/super-admin/films', data);
+      setFilms(prev => [...prev, res.data]);
       setShowFilmModal(false);
-      fetchAll();
+      await fetchAll();
       addToast('Film created');
     } catch (err) {
       addToast(getErrMsg(err, 'Failed to create film'), 'error');
@@ -213,7 +216,8 @@ export default function SuperAdminView() {
     if (!confirm('Delete this user?')) return;
     try {
       await api.delete(`/super-admin/users/${id}`);
-      fetchAll();
+      setUsers(prev => prev.filter(u => u.id !== id));
+      await fetchAll();
       addToast('User deleted');
     } catch (err) {
       addToast(getErrMsg(err, 'Failed to delete user'), 'error');
@@ -248,13 +252,14 @@ export default function SuperAdminView() {
     }
     setSavingAssign(true);
     try {
-      await api.post(`/super-admin/users/${assignUserId}/assign-film`, {
+      const res = await api.post(`/super-admin/users/${assignUserId}/assign-film`, {
         film_id: Number(assignForm.film_id),
         role_id: Number(assignForm.role_id),
         department: assignForm.department || null,
       });
+      setUsers(prev => prev.map(u => u.id === assignUserId ? { ...u, film_assignments: [...(u.film_assignments || []), res.data] } : u));
       setShowAssignModal(false);
-      fetchAll();
+      await fetchAll();
       addToast('User assigned to film');
     } catch (err) {
       addToast(getErrMsg(err, 'Failed to assign user'), 'error');
@@ -268,7 +273,8 @@ export default function SuperAdminView() {
     setRemovingFilm(`${userId}-${filmId}`);
     try {
       await api.delete(`/super-admin/users/${userId}/films/${filmId}`);
-      fetchAll();
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, film_assignments: (u.film_assignments || []).filter(fa => Number(fa.film_id) !== Number(filmId) && fa.film?.id !== Number(filmId)) } : u));
+      await fetchAll();
       addToast('User removed from film');
     } catch (err) {
       addToast(getErrMsg(err, 'Failed to remove user'), 'error');
