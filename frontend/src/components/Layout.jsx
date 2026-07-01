@@ -24,12 +24,13 @@ export default function Layout() {
   React.useEffect(() => { fetchFilms(); }, []);
   React.useEffect(() => { initialize(); }, []);
 
-  // Redirect to film selection if user has films but none selected
   React.useEffect(() => {
-    if (!currentFilm && userFilms.length > 1 && location.pathname !== '/app/select-film') {
-      navigate('/app/select-film');
+    if (currentFilm) return;
+    const safeRoutes = ['/app/dashboard', '/app/select-film'];
+    if (!safeRoutes.includes(location.pathname)) {
+      navigate(userFilms.length > 1 ? '/app/select-film' : '/app/dashboard');
     }
-  }, [currentFilm, userFilms, location.pathname]);
+  }, [currentFilm, userFilms.length, location.pathname]);
 
   const handleLogout = async () => {
     await logout();
@@ -76,12 +77,6 @@ export default function Layout() {
   });
 
   const activeItem = visibleNavItems.find(item => item.path === location.pathname);
-
-  React.useEffect(() => {
-    if (!currentFilm && location.pathname !== '/app/dashboard') {
-      navigate('/app/dashboard');
-    }
-  }, [currentFilm, location.pathname]);
 
   React.useEffect(() => {
     if (!currentFilm?.modules) return;

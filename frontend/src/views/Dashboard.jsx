@@ -34,8 +34,6 @@ export default function Dashboard() {
   const [castCrew, setCastCrew] = useState([]);
   const [progressUpdates, setProgressUpdates] = useState([]);
 
-  useEffect(() => { fetchFilms(); }, []);
-
   useEffect(() => {
     if (!currentFilm?.id) { setLoading(false); return; }
     const fetchAll = async () => {
