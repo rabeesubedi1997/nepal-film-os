@@ -115,6 +115,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/films/{film}/modules', [FilmController::class, 'toggleModule']);
         Route::post('/films/{film}/invite', [FilmController::class, 'inviteUser']);
 
+        // Member Management
+        Route::get('/films/{film}/members', [FilmController::class, 'members']);
+        Route::post('/films/{film}/members', [FilmController::class, 'addMember']);
+        Route::put('/films/{film}/members/{user}', [FilmController::class, 'updateMember']);
+        Route::delete('/films/{film}/members/{user}', [FilmController::class, 'removeMember']);
+
         // 1. Shooting Schedule Module (with Locations)
         Route::middleware('film.module:schedule')->group(function () {
             Route::get('/films/{film}/schedules', [ScheduleController::class, 'index']);
