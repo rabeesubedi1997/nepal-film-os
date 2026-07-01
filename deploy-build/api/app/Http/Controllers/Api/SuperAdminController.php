@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Film;
 use App\Models\User;
 use App\Models\FilmUser;
+use App\Models\FilmRole;
 use App\Models\SubscriptionPlan;
 use App\Models\FilmSubscription;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class SuperAdminController extends Controller
 {
@@ -23,7 +26,7 @@ class SuperAdminController extends Controller
             'total_films' => $totalFilms,
             'active_films' => $activeFilms,
             'total_users' => $totalUsers,
-            'total_film_users' => $totalFilmUsers,
+            'film_users' => $totalFilmUsers,
         ]);
     }
 
@@ -47,9 +50,65 @@ class SuperAdminController extends Controller
 
     public function users(Request $request)
     {
-        $users = User::withCount(['films', 'createdFilms'])->orderBy('created_at', 'desc')->get();
+        $users = User::withCount(['films', 'createdFilms'])
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($user) {
+                $user->film_assignments = FilmUser::with(['film:id,title,slug', 'filmRole:id,name,is_admin'])
+                    ->where('user_id', $user->id)
+                    ->where('is_active', true)
+                    ->get()
+                    ->map(function ($fu) {
+                        return [
+                            'film_id' => $fu->film_id,
+                            'film_title' => $fu->film?->title,
+                            'film_slug' => $fu->film?->slug,
+                            'role_id' => $fu->role_id,
+                            'role_name' => $fu->filmRole?->name ?? $fu->role,
+                            'is_admin' => $fu->filmRole?->is_admin ?? false,
+                            'department' => $fu->department,
+                        ];
+                    });
+                return $user;
+            });
 
         return response()->json($users);
+    }
+
+    public function userDetail($id)
+    {
+        $user = User::findOrFail($id);
+
+        $filmAssignments = FilmUser::with(['film:id,title,slug', 'filmRole:id,name,is_admin,permissions'])
+            ->where('user_id', $user->id)
+            ->where('is_active', true)
+            ->get()
+            ->map(function ($fu) {
+                return [
+                    'film_id' => $fu->film_id,
+                    'film_title' => $fu->film?->title,
+                    'film_slug' => $fu->film?->slug,
+                    'role_id' => $fu->role_id,
+                    'role_name' => $fu->filmRole?->name ?? $fu->role,
+                    'is_admin' => $fu->filmRole?->is_admin ?? false,
+                    'permissions' => $fu->filmRole?->permissions ?? [],
+                    'department' => $fu->department,
+                    'joined_at' => $fu->joined_at,
+                ];
+            });
+
+        return response()->json([
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'phone' => $user->phone,
+            'is_active' => $user->is_active,
+            'is_super_admin' => $user->is_super_admin,
+            'created_at' => $user->created_at,
+            'updated_at' => $user->updated_at,
+            'films_count' => $filmAssignments->count(),
+            'film_assignments' => $filmAssignments,
+        ]);
     }
 
     public function toggleFilmStatus(Request $request, $id)
@@ -120,15 +179,54 @@ class SuperAdminController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
-            'role' => 'nullable|string',
+            'is_super_admin' => 'nullable|boolean',
+            'film_id' => 'nullable|integer|exists:films,id',
+            'role_id' => 'nullable|integer|exists:film_roles,id',
+            'department' => 'nullable|string|max:255',
         ]);
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => bcrypt($validated['password']),
-            'is_active' => true,
-        ]);
+        if ($validated['is_super_admin'] ?? false) {
+            $existingSuperAdmins = User::where('is_super_admin', true)->count();
+            if ($existingSuperAdmins > 0) {
+                return response()->json([
+                    'message' => 'A super admin already exists. Only one super admin account is allowed for security reasons.',
+                ], 403);
+            }
+        }
+
+        $user = DB::transaction(function () use ($validated, $request) {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => bcrypt($validated['password']),
+                'is_active' => true,
+                'is_super_admin' => $validated['is_super_admin'] ?? false,
+            ]);
+
+            // Auto-assign to a film if film_id and role_id are provided
+            if (!empty($validated['film_id']) && !empty($validated['role_id'])) {
+                $filmRole = FilmRole::where('id', $validated['role_id'])
+                    ->where('film_id', $validated['film_id'])
+                    ->first();
+
+                if ($filmRole) {
+                    FilmUser::create([
+                        'film_id' => $validated['film_id'],
+                        'user_id' => $user->id,
+                        'role' => $filmRole->name,
+                        'role_id' => $filmRole->id,
+                        'department' => $validated['department'] ?? null,
+                        'is_active' => true,
+                        'joined_at' => now(),
+                    ]);
+                }
+            }
+
+            return $user;
+        });
+
+        $user = $user->fresh();
+        $user->films_count = $user->films()->count();
 
         return response()->json($user, 201);
     }
@@ -139,15 +237,16 @@ class SuperAdminController extends Controller
 
         $validated = $request->validate([
             'name' => 'nullable|string|max:255',
-            'email' => 'nullable|email|unique:users,email,' . $id,
+            'email' => ['nullable', 'email', Rule::unique('users', 'email')->ignore($id)],
             'password' => 'nullable|string|min:8',
-            'role' => 'nullable|string',
+            'is_super_admin' => 'nullable|boolean',
         ]);
 
         $data = [];
         if (isset($validated['name'])) $data['name'] = $validated['name'];
         if (isset($validated['email'])) $data['email'] = $validated['email'];
         if (!empty($validated['password'])) $data['password'] = bcrypt($validated['password']);
+        if (isset($validated['is_super_admin'])) $data['is_super_admin'] = $validated['is_super_admin'];
 
         $user->update($data);
 
@@ -161,6 +260,74 @@ class SuperAdminController extends Controller
         $user->delete();
 
         return response()->json(['message' => 'User deleted.']);
+    }
+
+    // User-Film Assignment
+    public function assignUserToFilm(Request $request, $userId)
+    {
+        $validated = $request->validate([
+            'film_id' => 'required|integer|exists:films,id',
+            'role_id' => 'required|integer|exists:film_roles,id',
+            'department' => 'nullable|string|max:255',
+        ]);
+
+        $user = User::findOrFail($userId);
+        $film = Film::findOrFail($validated['film_id']);
+
+        $filmRole = FilmRole::where('id', $validated['role_id'])
+            ->where('film_id', $film->id)
+            ->first();
+
+        if (!$filmRole) {
+            return response()->json([
+                'message' => 'The specified role does not belong to this film.',
+            ], 422);
+        }
+
+        $filmUser = FilmUser::updateOrCreate(
+            ['film_id' => $film->id, 'user_id' => $user->id],
+            [
+                'role' => $filmRole->name,
+                'role_id' => $filmRole->id,
+                'department' => $validated['department'] ?? null,
+                'is_active' => true,
+                'joined_at' => now(),
+            ]
+        );
+
+        return response()->json([
+            'message' => "User '{$user->name}' assigned to film '{$film->title}' with role '{$filmRole->name}'.",
+            'assignment' => [
+                'film_id' => $film->id,
+                'film_title' => $film->title,
+                'film_slug' => $film->slug,
+                'role_id' => $filmRole->id,
+                'role_name' => $filmRole->name,
+                'is_admin' => $filmRole->is_admin,
+                'department' => $filmUser->department,
+                'joined_at' => $filmUser->joined_at,
+            ],
+        ]);
+    }
+
+    public function removeUserFromFilm(Request $request, $userId, $filmId)
+    {
+        $user = User::findOrFail($userId);
+        $film = Film::findOrFail($filmId);
+
+        $deleted = FilmUser::where('film_id', $film->id)
+            ->where('user_id', $user->id)
+            ->delete();
+
+        if (!$deleted) {
+            return response()->json([
+                'message' => "User '{$user->name}' is not assigned to film '{$film->title}'.",
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => "User '{$user->name}' removed from film '{$film->title}'.",
+        ]);
     }
 
     // Film Subscriptions
