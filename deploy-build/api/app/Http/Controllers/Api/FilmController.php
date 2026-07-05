@@ -106,10 +106,27 @@ class FilmController extends Controller
 
             // Enable default modules
             $defaultModules = [
-                'schedule', 'cast_crew', 'expenses', 'call_sheet', 'progress', 'locations',
-                'script', 'script_breakdown', 'shot_list', 'tasks', 'timesheets', 'dpr', 'documents',
-                'messaging', 'wardrobe', 'continuity', 'storyboard', 'production_calendar',
-                'day_out_of_days', 'reports', 'analytics',
+                'schedule',
+                'cast_crew',
+                'expenses',
+                'call_sheet',
+                'progress',
+                'locations',
+                'script',
+                'script_breakdown',
+                'shot_list',
+                'tasks',
+                'timesheets',
+                'dpr',
+                'documents',
+                'messaging',
+                'wardrobe',
+                'continuity',
+                'storyboard',
+                'production_calendar',
+                'day_out_of_days',
+                'reports',
+                'analytics',
             ];
             foreach ($defaultModules as $module) {
                 FilmModule::create([
@@ -352,7 +369,11 @@ class FilmController extends Controller
                 $filmRole,
             ));
         } catch (\Exception $e) {
-            // Mail not configured - silently continue
+            \Log::error('Invite email failed: ' . $e->getMessage(), [
+                'email' => $targetUser->email,
+                'film_id' => $film->id,
+                'trace' => $e->getTraceAsString()
+            ]);
         }
 
         return response()->json([
@@ -548,15 +569,15 @@ class FilmController extends Controller
         ]);
 
         // Send invitation email (best effort)
-        try {
-            Mail::to($targetUser->email)->send(new FilmInvitationMail(
-                $targetUser,
-                $film,
-                $filmRole,
-            ));
-        } catch (\Exception $e) {
-            // Mail not configured - silently continue
-        }
+        // try {
+        Mail::to($targetUser->email)->send(new FilmInvitationMail(
+            $targetUser,
+            $film,
+            $filmRole,
+        ));
+        // } catch (\Exception $e) {
+        //     // Mail not configured - silently continue
+        // }
 
         return response()->json([
             'message' => 'Member added successfully.',
