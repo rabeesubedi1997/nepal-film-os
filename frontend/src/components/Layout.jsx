@@ -13,24 +13,34 @@ import {
 } from 'lucide-react';
 
 export default function Layout() {
-  const { currentFilm, userFilms, user, userRole, logout, selectFilm, fetchFilms } = useAuthStore();
+  const { currentFilm, userFilms, user, userRole, logout, selectFilm, fetchFilms, restoreLastFilm } = useAuthStore();
   const perm = usePermission();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const restored = React.useRef(false);
 
   const { t, initialize } = useLanguageStore();
 
-  React.useEffect(() => { fetchFilms(); }, []);
+  React.useEffect(() => {
+    fetchFilms();
+    // Restore last selected film on refresh (once)
+    if (!restored.current) {
+      restored.current = true;
+      restoreLastFilm();
+    }
+  }, []);
   React.useEffect(() => { initialize(); }, []);
 
   React.useEffect(() => {
+    // Super admins never need to select a film — they can access everything
+    if (user?.is_super_admin) return;
     if (currentFilm) return;
     const safeRoutes = ['/app/dashboard', '/app/select-film'];
     if (!safeRoutes.includes(location.pathname)) {
       navigate(userFilms.length > 1 ? '/app/select-film' : '/app/dashboard');
     }
-  }, [currentFilm, userFilms.length, location.pathname]);
+  }, [currentFilm, userFilms.length, location.pathname, user?.is_super_admin]);
 
   const handleLogout = async () => {
     await logout();
@@ -71,6 +81,8 @@ export default function Layout() {
   ];
 
   const visibleNavItems = navItems.filter(item => {
+    // Super admins see everything regardless of film/module state
+    if (user?.is_super_admin) return true;
     if (!perm.hasModule(item.moduleKey)) return false;
     if (item.adminOnly && !perm.isSuperAdmin) return false;
     return true;
@@ -79,12 +91,13 @@ export default function Layout() {
   const activeItem = visibleNavItems.find(item => item.path === location.pathname);
 
   React.useEffect(() => {
+    if (user?.is_super_admin) return;
     if (!currentFilm?.modules) return;
     const item = navItems.find(i => i.path === location.pathname);
     if (item?.moduleKey && !perm.hasModule(item.moduleKey)) {
       navigate('/app/dashboard');
     }
-  }, [currentFilm?.modules, location.pathname]);
+  }, [currentFilm?.modules, location.pathname, user?.is_super_admin]);
 
   const SidebarContent = () => (
     <>

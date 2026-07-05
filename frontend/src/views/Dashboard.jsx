@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthStore } from '../authStore';
 import api from '../api';
-import { Film, Plus, Users, Calendar, DollarSign, Activity, Loader, MapPin } from 'lucide-react';
+import { Film, Plus, Users, Calendar, DollarSign, Activity, Loader, MapPin, Settings, Shield } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useToastStore } from '../toastStore';
 
@@ -15,7 +15,7 @@ function ProgressBar({ value, max, color = 'bg-amber-500' }) {
 }
 
 export default function Dashboard() {
-  const { currentFilm, userFilms, fetchFilms, selectFilm } = useAuthStore();
+  const { currentFilm, userFilms, fetchFilms, selectFilm, user } = useAuthStore();
   const addToast = useToastStore(s => s.addToast);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -81,6 +81,28 @@ export default function Dashboard() {
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-6 w-6 border-2 border-amber-500 border-t-transparent rounded-full" /></div>;
 
   if (!currentFilm) {
+    if (user?.is_super_admin) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
+          <Shield className="h-16 w-16 text-amber-500/60" />
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-slate-300 mb-2">Super Admin Dashboard</h2>
+            <p className="text-slate-500 mb-6">Manage all films, users, and platform settings</p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <Link to="/app/admin"
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold px-5 py-2.5 rounded-lg transition-colors text-sm flex items-center gap-2">
+              <Settings className="h-4 w-4" /> Go to Admin Panel
+            </Link>
+            <select value="" onChange={e => { if (e.target.value) selectFilm(Number(e.target.value)); }}
+              className="bg-slate-800 border border-slate-700 text-slate-200 text-sm px-4 py-2.5 rounded-lg focus:outline-none focus:border-amber-500 cursor-pointer min-w-[200px]">
+              <option value="">Select a film to work in...</option>
+              {userFilms.map(f => <option key={f.id} value={f.id}>{f.title}</option>)}
+            </select>
+          </div>
+        </div>
+      );
+    }
     return (
       <>
         <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">

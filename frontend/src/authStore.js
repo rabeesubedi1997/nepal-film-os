@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import api from './api';
 
+const LAST_FILM_KEY = 'nepal_film_last_id';
+
 export const useAuthStore = create((set, get) => ({
   user: null,
   token: localStorage.getItem('nepal_film_token') || null,
@@ -64,6 +66,7 @@ export const useAuthStore = create((set, get) => ({
     } catch (e) {
       // Ignore network errors on logout
     }
+    localStorage.removeItem(LAST_FILM_KEY);
     get().setToken(null);
     set({ user: null, currentFilm: null, userRole: null, userRoleId: null, userPermissions: [], userIsAdmin: false, userFilms: [] });
   },
@@ -87,8 +90,10 @@ export const useAuthStore = create((set, get) => ({
     try {
       const response = await api.get('/films');
       set({ userFilms: response.data, loading: false });
+      return response.data;
     } catch (err) {
       set({ error: 'Failed to fetch film workspaces', loading: false });
+      return [];
     }
   },
 
@@ -97,6 +102,7 @@ export const useAuthStore = create((set, get) => ({
     try {
       const response = await api.get(`/films/${filmIdOrSlug}`);
       const film = response.data;
+      localStorage.setItem(LAST_FILM_KEY, film.id);
       set({
         currentFilm: film,
         userRole: film.user_role,
@@ -111,6 +117,27 @@ export const useAuthStore = create((set, get) => ({
       set({ error: 'Failed to access film workspace', loading: false });
       return null;
     }
+  },
+
+  restoreLastFilm: async () => {
+    const { token, user } = get();
+    if (!token) return null;
+    const lastId = localStorage.getItem(LAST_FILM_KEY);
+    if (!lastId) return null;
+    // If user not loaded yet, fetch them first
+    if (!user) {
+      const u = await get().fetchCurrentUser();
+      if (!u) return null;
+    }
+    // Fetch films list (needed for sidebar dropdown etc.)
+    const films = await get().fetchFilms();
+    // Check if the last film still exists in user's films
+    const stillExists = films?.some(f => String(f.id) === lastId || String(f.slug) === lastId);
+    if (!stillExists) {
+      localStorage.removeItem(LAST_FILM_KEY);
+      return null;
+    }
+    return get().selectFilm(lastId);
   },
 
   toggleModule: async (moduleName, isEnabled) => {
