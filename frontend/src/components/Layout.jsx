@@ -81,10 +81,9 @@ export default function Layout() {
   ];
 
   const visibleNavItems = navItems.filter(item => {
-    // Super admins see everything regardless of film/module state
     if (user?.is_super_admin) return true;
-    if (!perm.hasModule(item.moduleKey)) return false;
-    if (item.adminOnly && !perm.isSuperAdmin) return false;
+    if (item.adminOnly) return false;
+    if (item.moduleKey && !perm.hasModule(item.moduleKey)) return false;
     return true;
   });
 
