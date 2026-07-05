@@ -344,6 +344,17 @@ class FilmController extends Controller
             ]
         );
 
+        // Send invitation email (best effort)
+        try {
+            Mail::to($targetUser->email)->send(new FilmInvitationMail(
+                $targetUser,
+                $film,
+                $filmRole,
+            ));
+        } catch (\Exception $e) {
+            // Mail not configured - silently continue
+        }
+
         return response()->json([
             'message' => 'User invited successfully.',
             'user' => $targetUser,
