@@ -35,7 +35,7 @@ use App\Http\Controllers\Api\FeatureController;
 
 // Public Auth routes (rate limited to prevent brute force)
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:3,60');
-Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,60');
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,60');
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
