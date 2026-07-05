@@ -82,7 +82,7 @@ class FilmController extends Controller
                 'created_by' => $user->id,
             ]);
 
-            // Create default Admin role for this film
+            // Create default roles for this film
             $adminRole = FilmRole::create([
                 'film_id' => $film->id,
                 'name' => 'Admin',
@@ -90,6 +90,68 @@ class FilmController extends Controller
                 'description' => 'Full access to all film features and settings',
                 'is_admin' => true,
                 'permissions' => [],
+                'created_by' => $user->id,
+            ]);
+
+            FilmRole::create([
+                'film_id' => $film->id,
+                'name' => 'Editor',
+                'slug' => 'editor',
+                'description' => 'Can create and edit content in all modules',
+                'is_admin' => false,
+                'permissions' => [
+                    'film.view', 'film.edit',
+                    'schedule.view', 'schedule.create', 'schedule.edit',
+                    'scene.view', 'scene.create', 'scene.edit',
+                    'script.view', 'script.create', 'script.edit',
+                    'script_breakdown.view', 'script_breakdown.create', 'script_breakdown.edit',
+                    'shot_list.view', 'shot_list.create', 'shot_list.edit',
+                    'cast_crew.view', 'cast_crew.create', 'cast_crew.edit',
+                    'budget.view', 'budget.manage',
+                    'expense.create', 'expense.edit',
+                    'call_sheet.view', 'call_sheet.create', 'call_sheet.edit',
+                    'progress.view', 'progress.create', 'progress.edit',
+                    'location.view', 'location.create', 'location.edit',
+                    'task.view', 'task.create', 'task.edit',
+                    'timesheet.view', 'timesheet.create', 'timesheet.edit',
+                    'dpr.view', 'dpr.create', 'dpr.edit',
+                    'document.view', 'document.create', 'document.edit',
+                    'message.view', 'message.create',
+                    'wardrobe.view', 'wardrobe.create', 'wardrobe.edit',
+                    'continuity.view', 'continuity.create', 'continuity.edit',
+                    'vendor.view', 'vendor.create', 'vendor.edit',
+                    'notification.view', 'notification.mark_read',
+                ],
+                'created_by' => $user->id,
+            ]);
+
+            FilmRole::create([
+                'film_id' => $film->id,
+                'name' => 'Viewer',
+                'slug' => 'viewer',
+                'description' => 'Read-only access to all modules',
+                'is_admin' => false,
+                'permissions' => [
+                    'film.view',
+                    'schedule.view', 'scene.view',
+                    'script.view',
+                    'script_breakdown.view',
+                    'shot_list.view',
+                    'cast_crew.view',
+                    'budget.view',
+                    'call_sheet.view',
+                    'progress.view',
+                    'location.view',
+                    'task.view',
+                    'timesheet.view',
+                    'dpr.view',
+                    'document.view',
+                    'message.view',
+                    'wardrobe.view',
+                    'continuity.view',
+                    'vendor.view',
+                    'notification.view', 'notification.mark_read',
+                ],
                 'created_by' => $user->id,
             ]);
 
