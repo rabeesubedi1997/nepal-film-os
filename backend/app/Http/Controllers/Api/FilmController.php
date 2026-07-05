@@ -396,7 +396,7 @@ class FilmController extends Controller
             ]);
         }
 
-        if (!$targetUser->invitation_token || $targetUser->invitation_token_expires_at < now()) {
+        if (!$targetUser->invitation_token || !$targetUser->invitation_token_expires_at || $targetUser->invitation_token_expires_at < now()) {
             $targetUser->update([
                 'invitation_token' => Str::random(60),
                 'invitation_token_expires_at' => now()->addDays(7),
@@ -495,8 +495,8 @@ class FilmController extends Controller
             ->firstOrFail();
 
         // Cannot modify the creator's admin role
-        if ($film->created_by === (int) $userId && $filmUser->isFilmAdmin()) {
-            return response()->json(['message' => 'Cannot modify the film creator\'s admin role.'], 403);
+        if ($film->created_by === (int) $userId) {
+            return response()->json(['message' => 'Cannot modify the film creator.'], 403);
         }
 
         $validated = $request->validate([
@@ -615,7 +615,7 @@ class FilmController extends Controller
             ]);
         }
 
-        if (!$targetUser->invitation_token || $targetUser->invitation_token_expires_at < now()) {
+        if (!$targetUser->invitation_token || !$targetUser->invitation_token_expires_at || $targetUser->invitation_token_expires_at < now()) {
             $targetUser->update([
                 'invitation_token' => Str::random(60),
                 'invitation_token_expires_at' => now()->addDays(7),

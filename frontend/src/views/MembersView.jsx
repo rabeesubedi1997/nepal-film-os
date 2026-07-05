@@ -86,7 +86,7 @@ export default function MembersView() {
   const handleRoleChange = (roleId) => {
     setForm(f => ({ ...f, role_id: roleId }));
     // When role changes, reset permissions to the role's defaults
-    const role = roles.find(r => r.id === Number(roleId));
+    const role = roles.find(r => Number(r.id) === Number(roleId));
     setSelectedPermissions(role?.permissions || []);
   };
 

@@ -23,11 +23,10 @@ export default function Layout() {
   const { t, initialize } = useLanguageStore();
 
   React.useEffect(() => {
-    fetchFilms();
-    // Restore last selected film on refresh (once)
     if (!restored.current) {
       restored.current = true;
-      restoreLastFilm();
+      // Fetch films once, then restore last film
+      fetchFilms().then(() => restoreLastFilm());
     }
   }, []);
   React.useEffect(() => { initialize(); }, []);
