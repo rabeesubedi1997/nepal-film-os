@@ -341,12 +341,18 @@ class FilmController extends Controller
         $targetUser = User::where('email', $validated['email'])->first();
 
         if (!$targetUser) {
-            $tempPassword = Str::random(12);
             $targetUser = User::create([
                 'name' => explode('@', $validated['email'])[0],
                 'email' => $validated['email'],
-                'password' => bcrypt($tempPassword),
+                'password' => bcrypt(Str::random(24)),
                 'is_active' => true,
+            ]);
+        }
+
+        if (!$targetUser->invitation_token || $targetUser->invitation_token_expires_at < now()) {
+            $targetUser->update([
+                'invitation_token' => Str::random(60),
+                'invitation_token_expires_at' => now()->addDays(7),
             ]);
         }
 
@@ -367,6 +373,7 @@ class FilmController extends Controller
                 $targetUser,
                 $film,
                 $filmRole,
+                $targetUser->invitation_token,
             ));
         } catch (\Exception $e) {
             \Log::error('Invite email failed: ' . $e->getMessage(), [
@@ -553,8 +560,15 @@ class FilmController extends Controller
             $targetUser = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
-                'password' => bcrypt($validated['password'] ?? 'password'),
+                'password' => bcrypt(Str::random(24)),
                 'is_active' => true,
+            ]);
+        }
+
+        if (!$targetUser->invitation_token || $targetUser->invitation_token_expires_at < now()) {
+            $targetUser->update([
+                'invitation_token' => Str::random(60),
+                'invitation_token_expires_at' => now()->addDays(7),
             ]);
         }
 
@@ -569,15 +583,20 @@ class FilmController extends Controller
         ]);
 
         // Send invitation email (best effort)
-        // try {
-        Mail::to($targetUser->email)->send(new FilmInvitationMail(
-            $targetUser,
-            $film,
-            $filmRole,
-        ));
-        // } catch (\Exception $e) {
-        //     // Mail not configured - silently continue
-        // }
+        try {
+            Mail::to($targetUser->email)->send(new FilmInvitationMail(
+                $targetUser,
+                $film,
+                $filmRole,
+                $targetUser->invitation_token,
+            ));
+        } catch (\Exception $e) {
+            \Log::error('Invite email failed: ' . $e->getMessage(), [
+                'email' => $targetUser->email,
+                'film_id' => $film->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
 
         return response()->json([
             'message' => 'Member added successfully.',

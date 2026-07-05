@@ -8,6 +8,7 @@ import Landing from './views/Landing';
 import FeatureDetail from './views/FeatureDetail';
 import Login from './views/Login';
 import Register from './views/Register';
+import AcceptInvitation from './views/AcceptInvitation';
 import Dashboard from './views/Dashboard';
 import ScheduleView from './views/ScheduleView';
 import CastCrewView from './views/CastCrewView';
@@ -112,6 +113,7 @@ export default function App() {
             </GuestGuard>
           }
         />
+        <Route path="/invitation/accept" element={<AcceptInvitation />} />
 
         <Route
           path="/app"

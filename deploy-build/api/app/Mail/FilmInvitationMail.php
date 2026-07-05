@@ -19,6 +19,7 @@ class FilmInvitationMail extends Mailable
         public User $user,
         public Film $film,
         public FilmRole $role,
+        public string $token,
     ) {}
 
     public function envelope(): Envelope
@@ -32,6 +33,9 @@ class FilmInvitationMail extends Mailable
     {
         return new Content(
             view: 'emails.film-invitation',
+            with: [
+                'acceptUrl' => url("/invitation/accept?token={$this->token}&email={$this->user->email}"),
+            ],
         );
     }
 }

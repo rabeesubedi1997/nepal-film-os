@@ -29,6 +29,8 @@ class User extends Authenticatable
         'timezone',
         'is_active',
         'is_super_admin',
+        'invitation_token',
+        'invitation_token_expires_at',
         'last_login_at',
         'password',
     ];
@@ -41,6 +43,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'invitation_token',
     ];
 
     /**
@@ -55,6 +58,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_active' => 'boolean',
             'is_super_admin' => 'boolean',
+            'invitation_token_expires_at' => 'datetime',
             'last_login_at' => 'datetime',
         ];
     }
