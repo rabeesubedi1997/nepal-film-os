@@ -43,6 +43,11 @@ export default function SuperAdminView() {
 
   const [toggleLoading, setToggleLoading] = useState(null);
 
+  const [showFeaturesModal, setShowFeaturesModal] = useState(false);
+  const [featuresFilm, setFeaturesFilm] = useState(null);
+  const [featuresList, setFeaturesList] = useState([]);
+  const [featuresLoading, setFeaturesLoading] = useState(false);
+
   const fetchAll = async () => {
     try {
       setLoading(true);
@@ -75,6 +80,40 @@ export default function SuperAdminView() {
       addToast(getErrMsg(err, 'Failed to toggle status'), 'error');
     } finally {
       setToggleLoading(null);
+    }
+  };
+
+  const openFeaturesModal = async (film) => {
+    setFeaturesFilm(film);
+    setShowFeaturesModal(true);
+    setFeaturesLoading(true);
+    try {
+      const res = await api.get(`/films/${film.id}/features`);
+      setFeaturesList(res.data || []);
+    } catch (err) {
+      addToast(getErrMsg(err, 'Failed to load features'), 'error');
+      setFeaturesList([]);
+    } finally {
+      setFeaturesLoading(false);
+    }
+  };
+
+  const toggleFeature = async (moduleName, currentlyEnabled) => {
+    if (!featuresFilm) return;
+    // Optimistic update
+    setFeaturesList(prev => prev.map(f =>
+      f.module_name === moduleName ? { ...f, is_enabled: !currentlyEnabled } : f
+    ));
+    try {
+      await api.put(`/films/${featuresFilm.id}/features/toggle`, {
+        module_name: moduleName,
+        is_enabled: !currentlyEnabled,
+      });
+    } catch (err) {
+      addToast(getErrMsg(err, 'Failed to toggle feature'), 'error');
+      setFeaturesList(prev => prev.map(f =>
+        f.module_name === moduleName ? { ...f, is_enabled: currentlyEnabled } : f
+      ));
     }
   };
 
@@ -377,20 +416,26 @@ export default function SuperAdminView() {
           <div className="divide-y divide-slate-800">
             {films.length === 0 && <div className="px-5 py-8 text-center text-slate-500 text-sm">No films found.</div>}
             {films.map(f => (
-              <div key={f.id} className="px-4 sm:px-5 py-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="bg-blue-500/20 text-blue-400 p-2 rounded-lg shrink-0"><Film className="h-4 w-4" /></div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold text-slate-200 truncate">{f.title}</p>
-                    <p className="text-xs text-slate-500 truncate">{f.production_company || '\u2014'} \u00B7 {f.status || 'draft'}</p>
+                <div key={f.id} className="px-4 sm:px-5 py-4 flex items-center justify-between hover:bg-slate-800/30 transition-colors gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="bg-blue-500/20 text-blue-400 p-2 rounded-lg shrink-0"><Film className="h-4 w-4" /></div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-200 truncate">{f.title}</p>
+                      <p className="text-xs text-slate-500 truncate">{f.production_company || '\u2014'} \u00B7 {f.status || 'draft'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => openFeaturesModal(f)}
+                      className="shrink-0 flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700 hover:border-amber-500/50 hover:text-amber-400 transition-all">
+                      <ToggleRight className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Features</span>
+                    </button>
+                    <button onClick={() => toggleActive(f.id)} disabled={toggleLoading === f.id}
+                      className={`shrink-0 flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${f.is_active ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500 border border-slate-700'} hover:opacity-80 disabled:opacity-50`}>
+                      {toggleLoading === f.id ? <Loader className="h-3.5 w-3.5 animate-spin" /> : f.is_active ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />}
+                      <span className="hidden sm:inline">{f.is_active ? 'Active' : 'Inactive'}</span>
+                    </button>
                   </div>
                 </div>
-                <button onClick={() => toggleActive(f.id)} disabled={toggleLoading === f.id}
-                  className={`shrink-0 flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${f.is_active ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-slate-800 text-slate-500 border border-slate-700'} hover:opacity-80 disabled:opacity-50`}>
-                  {toggleLoading === f.id ? <Loader className="h-3.5 w-3.5 animate-spin" /> : f.is_active ? <ToggleRight className="h-3.5 w-3.5" /> : <ToggleLeft className="h-3.5 w-3.5" />}
-                  <span className="hidden sm:inline">{f.is_active ? 'Active' : 'Inactive'}</span>
-                </button>
-              </div>
             ))}
           </div>
         </div>
@@ -426,9 +471,37 @@ export default function SuperAdminView() {
                     </select>
                     {userForm.film_id && <FilmRoleDropdown filmId={userForm.film_id} value={userForm.role_id} onChange={v => setUserForm(f => ({ ...f, role_id: v }))} />}
                     <Input label="Department (optional)" value={userForm.department} onChange={e => setUserForm(f => ({ ...f, department: e.target.value }))} name="department" placeholder="e.g., Production" />
+          </div>
+
+          <Modal open={showFeaturesModal} onClose={() => setShowFeaturesModal(false)}
+            title={featuresFilm ? `Features: ${featuresFilm.title}` : 'Manage Features'} size="lg">
+            {featuresLoading ? (
+              <div className="flex items-center justify-center py-12"><Loader className="h-6 w-6 animate-spin text-amber-400" /></div>
+            ) : (
+              <div className="space-y-1">
+                {featuresList.map(feat => (
+                  <div key={feat.module_name}
+                    className="flex items-center justify-between px-4 py-3 rounded-lg bg-slate-800/40 border border-slate-700/50 hover:border-slate-600/50 transition-all">
+                    <div>
+                      <p className="text-sm font-medium text-slate-200 capitalize">
+                        {feat.module_name.replace(/_/g, ' ')}
+                      </p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{feat.module_name}</p>
+                    </div>
+                    <button onClick={() => toggleFeature(feat.module_name, feat.is_enabled)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all shrink-0 ${feat.is_enabled ? 'bg-emerald-500' : 'bg-slate-700'}`}>
+                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${feat.is_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
                   </div>
-                </div>
-              )}
+                ))}
+                {featuresList.length === 0 && (
+                  <p className="text-center text-sm text-slate-500 py-8">No features available.</p>
+                )}
+              </div>
+            )}
+          </Modal>
+        </div>
+      )}
               <div className="flex justify-end gap-3 pt-2">
                 <Button variant="secondary" onClick={() => setShowUserModal(false)}>Cancel</Button>
                 <Button variant="primary" type="submit" disabled={savingUser}>
