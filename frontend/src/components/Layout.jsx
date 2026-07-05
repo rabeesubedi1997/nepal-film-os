@@ -74,9 +74,9 @@ export default function Layout() {
     { name: 'Analytics', path: '/app/analytics', icon: BarChart3, moduleKey: null, viewPermission: null, tKey: 'nav.analytics' },
     { name: 'Media Library', path: '/app/media', icon: Image, moduleKey: null, viewPermission: null, tKey: 'nav.media' },
     { name: 'News', path: '/app/news', icon: Bell, moduleKey: null, viewPermission: null, tKey: 'nav.news' },
-    { name: 'Feature Settings', path: '/app/settings', icon: ToggleLeft, moduleKey: null, viewPermission: null, tKey: 'nav.settings' },
-    { name: 'Members', path: '/app/members', icon: UserPlus, moduleKey: null, viewPermission: null, tKey: 'nav.members' },
-    { name: 'Roles & Permissions', path: '/app/roles', icon: Shield, moduleKey: null, viewPermission: null, tKey: 'nav.roles' },
+    { name: 'Feature Settings', path: '/app/settings', icon: ToggleLeft, moduleKey: null, viewPermission: 'film.edit', tKey: 'nav.settings' },
+    { name: 'Members', path: '/app/members', icon: UserPlus, moduleKey: null, viewPermission: 'film.invite_users', tKey: 'nav.members' },
+    { name: 'Roles & Permissions', path: '/app/roles', icon: Shield, moduleKey: null, viewPermission: 'film.manage_roles', tKey: 'nav.roles' },
     { name: 'Admin', path: '/app/admin', icon: Settings, moduleKey: null, viewPermission: null, adminOnly: true, tKey: 'nav.admin' },
   ];
 

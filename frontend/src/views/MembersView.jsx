@@ -34,7 +34,7 @@ export default function MembersView() {
         roleService.getAll(currentFilm.id),
       ]);
       setMembers(membersRes.data || []);
-      setRoles((rolesRes.data || []).filter(r => !r.is_admin));
+      setRoles(rolesRes.data || []);
     } catch (err) {
       setError('Failed to load members');
     } finally {
@@ -216,7 +216,7 @@ export default function MembersView() {
               <Input label="Temporary Password" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} name="password" placeholder="Leave blank for 'password'" />
             </>
           )}
-          <Input label="Role" value={form.role_id} onChange={e => setForm(f => ({ ...f, role_id: e.target.value }))} name="role_id" options={roles.map(r => ({ value: r.id, label: r.name }))} required />
+          <Input label="Role" value={form.role_id} onChange={e => setForm(f => ({ ...f, role_id: e.target.value }))} name="role_id" options={roles.map(r => ({ value: r.id, label: r.is_admin ? `${r.name} (Full Access)` : r.name }))} required />
           <Input label="Department" value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} name="department" placeholder="e.g., Camera, Sound, Direction" />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)}>Cancel</Button>
