@@ -218,9 +218,11 @@ class FilmController extends Controller
         $film->user_department = $filmUser->department;
         $film->user_role_id = $filmUser->role_id;
 
-        // Include permissions from the role
+        // Merge role permissions with individual user-level overrides
         if ($filmUser->filmRole) {
-            $film->user_permissions = $filmUser->filmRole->permissions;
+            $rolePerms = $filmUser->filmRole->permissions ?? [];
+            $userPerms = $filmUser->permissions ?? [];
+            $film->user_permissions = array_values(array_unique(array_merge($rolePerms, $userPerms)));
             $film->user_is_admin = $filmUser->filmRole->is_admin;
         } else {
             $film->user_permissions = [];
