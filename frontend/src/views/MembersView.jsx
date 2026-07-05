@@ -3,8 +3,9 @@ import { useAuthStore } from '../authStore';
 import { useToastStore } from '../toastStore';
 import { filmService } from '../services/filmService';
 import { roleService } from '../services/roleService';
+import api from '../api';
 import { Modal, Input, Button, Badge } from '../components/ui';
-import { Users, UserPlus, Edit3, Trash2, Loader, Shield, Mail, Calendar } from 'lucide-react';
+import { Users, UserPlus, Edit3, Trash2, Loader, Shield, Mail, CheckSquare } from 'lucide-react';
 
 export default function MembersView() {
   const { currentFilm, userIsAdmin } = useAuthStore();
@@ -13,12 +14,14 @@ export default function MembersView() {
 
   const [members, setMembers] = useState([]);
   const [roles, setRoles] = useState([]);
+  const [permissionsGrouped, setPermissionsGrouped] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editMember, setEditMember] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', password: '', role_id: '', department: '' });
+  const [selectedPermissions, setSelectedPermissions] = useState([]);
   const [saving, setSaving] = useState(false);
 
   const [removeConfirm, setRemoveConfirm] = useState(null);
@@ -29,14 +32,22 @@ export default function MembersView() {
     setLoading(true);
     setError(null);
     try {
-      const [membersRes, rolesRes] = await Promise.all([
+      const [membersRes, rolesRes, permsRes] = await Promise.all([
         filmService.getMembers(currentFilm.id),
         roleService.getAll(currentFilm.id),
+        api.get('/permissions/list'),
       ]);
       setMembers(membersRes.data || []);
       setRoles(rolesRes.data || []);
+
+      const grouped = {};
+      for (const p of permsRes.data || []) {
+        if (!grouped[p.group]) grouped[p.group] = [];
+        grouped[p.group].push(p);
+      }
+      setPermissionsGrouped(grouped);
     } catch (err) {
-      setError('Failed to load members');
+      setError('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -47,6 +58,7 @@ export default function MembersView() {
   const openAdd = () => {
     setEditMember(null);
     setForm({ name: '', email: '', password: '', role_id: '', department: '' });
+    setSelectedPermissions([]);
     setShowAddModal(true);
   };
 
@@ -59,7 +71,30 @@ export default function MembersView() {
       role_id: member.role_id || '',
       department: member.department || '',
     });
+
+    // Pre-fill permissions from role defaults, then apply individual overrides
+    const role = roles.find(r => r.id === member.role_id);
+    const rolePerms = role?.permissions || [];
+    const individualPerms = member.permissions || [];
+    // Merge: role defaults + individual overrides
+    const merged = [...new Set([...rolePerms, ...individualPerms])];
+    setSelectedPermissions(merged);
     setShowAddModal(true);
+  };
+
+  const handleRoleChange = (roleId) => {
+    setForm(f => ({ ...f, role_id: roleId }));
+    // When role changes, reset permissions to the role's defaults
+    const role = roles.find(r => r.id === Number(roleId));
+    setSelectedPermissions(role?.permissions || []);
+  };
+
+  const togglePermission = (permKey) => {
+    setSelectedPermissions(prev =>
+      prev.includes(permKey)
+        ? prev.filter(k => k !== permKey)
+        : [...prev, permKey]
+    );
   };
 
   const save = async (e) => {
@@ -67,14 +102,17 @@ export default function MembersView() {
     if (!form.name.trim() || !form.email.trim() || !form.role_id) return;
     setSaving(true);
     try {
+      const payload = {
+        role_id: form.role_id,
+        department: form.department,
+        permissions: selectedPermissions,
+      };
+
       if (editMember) {
-        await filmService.updateMember(currentFilm.id, editMember.user_id, {
-          role_id: form.role_id,
-          department: form.department,
-        });
+        await filmService.updateMember(currentFilm.id, editMember.user_id, payload);
         addToast('Member updated');
       } else {
-        await filmService.addMember(currentFilm.id, form);
+        await filmService.addMember(currentFilm.id, { ...form, ...payload });
         addToast('Member added');
       }
       setShowAddModal(false);
@@ -155,6 +193,7 @@ export default function MembersView() {
                   <tr className="border-b border-slate-800">
                     <th className="text-left px-5 py-3 text-xs font-medium text-slate-500">Member</th>
                     <th className="text-left px-5 py-3 text-xs font-medium text-slate-500">Role</th>
+                    <th className="text-left px-5 py-3 text-xs font-medium text-slate-500">Permissions</th>
                     <th className="text-left px-5 py-3 text-xs font-medium text-slate-500">Department</th>
                     <th className="text-left px-5 py-3 text-xs font-medium text-slate-500">Joined</th>
                     {isAdmin && <th className="text-right px-5 py-3 text-xs font-medium text-slate-500">Actions</th>}
@@ -179,6 +218,13 @@ export default function MembersView() {
                       <td className="px-5 py-3.5">
                         <Badge color={m.is_admin ? 'amber' : 'blue'}>{m.role_name}</Badge>
                         {m.is_admin && <span className="text-[10px] text-amber-500 ml-1.5">Admin</span>}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {m.permissions && m.permissions.length > 0 ? (
+                          <span className="text-xs text-slate-400">{m.permissions.length} overrides</span>
+                        ) : (
+                          <span className="text-xs text-slate-600">From role</span>
+                        )}
                       </td>
                       <td className="px-5 py-3.5 text-slate-400 text-sm">{m.department || '-'}</td>
                       <td className="px-5 py-3.5 text-slate-500 text-xs">
@@ -207,8 +253,8 @@ export default function MembersView() {
         </div>
       )}
 
-      <Modal open={showAddModal} onClose={() => setShowAddModal(false)} title={editMember ? 'Edit Member' : 'Add Team Member'} size="md">
-        <form onSubmit={save} className="space-y-4">
+      <Modal open={showAddModal} onClose={() => setShowAddModal(false)} title={editMember ? 'Edit Member' : 'Add Team Member'} size="lg">
+        <form onSubmit={save} className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
           {!editMember && (
             <>
               <Input label="Full Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} name="name" required placeholder="John Doe" />
@@ -216,9 +262,38 @@ export default function MembersView() {
               <Input label="Temporary Password" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} name="password" placeholder="Leave blank for 'password'" />
             </>
           )}
-          <Input label="Role" value={form.role_id} onChange={e => setForm(f => ({ ...f, role_id: e.target.value }))} name="role_id" options={roles.map(r => ({ value: r.id, label: r.is_admin ? `${r.name} (Full Access)` : r.name }))} required />
+          <Input label="Role" value={form.role_id} onChange={e => handleRoleChange(e.target.value)} name="role_id" options={roles.map(r => ({ value: r.id, label: r.is_admin ? `${r.name} (Full Access)` : r.name }))} required />
+
           <Input label="Department" value={form.department} onChange={e => setForm(f => ({ ...f, department: e.target.value }))} name="department" placeholder="e.g., Camera, Sound, Direction" />
-          <div className="flex justify-end gap-3 pt-2">
+
+          {Object.keys(permissionsGrouped).length > 0 && (
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-2">Permissions Override</label>
+              <p className="text-xs text-slate-600 mb-3">Fine-tune permissions for this user. Changes here override the role defaults.</p>
+              <div className="space-y-3 max-h-64 overflow-y-auto bg-slate-950 rounded-lg p-3 border border-slate-800">
+                {Object.entries(permissionsGrouped).map(([group, perms]) => (
+                  <div key={group}>
+                    <p className="text-xs font-medium text-slate-500 mb-1.5 uppercase tracking-wider">{group}</p>
+                    <div className="grid grid-cols-2 gap-1">
+                      {perms.map(p => (
+                        <label key={p.key} className="flex items-center gap-2 py-1 px-1.5 rounded hover:bg-slate-800/50 cursor-pointer transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={selectedPermissions.includes(p.key)}
+                            onChange={() => togglePermission(p.key)}
+                            className="rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500/30 focus:ring-offset-0 cursor-pointer"
+                          />
+                          <span className="text-xs text-slate-300">{p.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2 sticky bottom-0 bg-slate-900 py-3">
             <Button variant="secondary" type="button" onClick={() => setShowAddModal(false)}>Cancel</Button>
             <Button variant="primary" type="submit" disabled={saving}>
               {saving ? <><Loader className="h-3.5 w-3.5 animate-spin" /> Saving...</> : editMember ? 'Update Member' : 'Add Member'}

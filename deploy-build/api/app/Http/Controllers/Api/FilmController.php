@@ -473,6 +473,7 @@ class FilmController extends Controller
                     'role_slug' => $fu->filmRole->slug ?? null,
                     'is_admin' => $fu->filmRole->is_admin ?? false,
                     'department' => $fu->department,
+                    'permissions' => $fu->permissions,
                     'is_active' => $fu->is_active,
                     'joined_at' => $fu->joined_at,
                     'avatar' => $fu->user->avatar ?? null,
@@ -517,6 +518,8 @@ class FilmController extends Controller
             'role_id' => 'nullable|integer|exists:film_roles,id',
             'department' => 'nullable|string|max:255',
             'is_active' => 'nullable|boolean',
+            'permissions' => 'nullable|array',
+            'permissions.*' => 'string',
         ]);
 
         if (isset($validated['role_id'])) {

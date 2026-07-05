@@ -148,6 +148,7 @@ class PermissionService
             'Continuity' => ['continuity.view', 'continuity.create', 'continuity.edit', 'continuity.delete'],
             'Vendors' => ['vendor.view', 'vendor.create', 'vendor.edit', 'vendor.delete'],
             'Notifications' => ['notification.view', 'notification.mark_read'],
+            'Media Library' => ['media.view'],
         ];
     }
 

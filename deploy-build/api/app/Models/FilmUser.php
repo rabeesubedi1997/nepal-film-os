@@ -42,6 +42,12 @@ class FilmUser extends Model
 
     public function hasPermission($permission)
     {
+        // Check individual user-level permissions first
+        if ($this->permissions && in_array($permission, $this->permissions)) {
+            return true;
+        }
+
+        // Fall back to role permissions
         if ($this->filmRole) {
             return $this->filmRole->hasPermission($permission);
         }
@@ -50,6 +56,12 @@ class FilmUser extends Model
 
     public function hasAnyPermission(array $permissions)
     {
+        // Check individual user-level permissions first
+        if ($this->permissions && !empty(array_intersect($permissions, $this->permissions))) {
+            return true;
+        }
+
+        // Fall back to role permissions
         if ($this->filmRole) {
             return $this->filmRole->hasAnyPermission($permissions);
         }

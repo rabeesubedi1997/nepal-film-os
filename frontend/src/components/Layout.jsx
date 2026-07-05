@@ -72,7 +72,7 @@ export default function Layout() {
     { name: 'Day Out of Days', path: '/app/day-out-of-days', icon: Calendar, moduleKey: 'schedule', viewPermission: 'schedule.view', tKey: 'nav.day_out_of_days' },
     { name: 'Reports', path: '/app/reports', icon: BarChart2, moduleKey: null, viewPermission: null, tKey: 'nav.reports' },
     { name: 'Analytics', path: '/app/analytics', icon: BarChart3, moduleKey: null, viewPermission: null, tKey: 'nav.analytics' },
-    { name: 'Media Library', path: '/app/media', icon: Image, moduleKey: null, viewPermission: null, tKey: 'nav.media' },
+    { name: 'Media Library', path: '/app/media', icon: Image, moduleKey: null, viewPermission: 'media.view', tKey: 'nav.media' },
     { name: 'News', path: '/app/news', icon: Bell, moduleKey: null, viewPermission: null, tKey: 'nav.news' },
     { name: 'Feature Settings', path: '/app/settings', icon: ToggleLeft, moduleKey: null, viewPermission: 'film.edit', tKey: 'nav.settings' },
     { name: 'Members', path: '/app/members', icon: UserPlus, moduleKey: null, viewPermission: 'film.invite_users', tKey: 'nav.members' },
