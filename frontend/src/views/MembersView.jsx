@@ -64,16 +64,17 @@ export default function MembersView() {
 
   const openEdit = (member) => {
     setEditMember(member);
+    const roleId = Number(member.role_id) || '';
     setForm({
       name: member.name,
       email: member.email,
       password: '',
-      role_id: member.role_id || '',
+      role_id: roleId,
       department: member.department || '',
     });
 
     // Pre-fill permissions from role defaults, then apply individual overrides
-    const role = roles.find(r => r.id === member.role_id);
+    const role = roleId ? roles.find(r => Number(r.id) === roleId) : null;
     const rolePerms = role?.permissions || [];
     const individualPerms = member.permissions || [];
     // Merge: role defaults + individual overrides
