@@ -48,42 +48,43 @@ export default function Layout() {
   };
 
   const navItems = [
-    { name: 'Dashboard', path: '/app/dashboard', icon: Home, moduleKey: null, tKey: 'nav.dashboard' },
-    { name: 'Scripts', path: '/app/scripts', icon: FileText, moduleKey: 'script', tKey: 'nav.script' },
-    { name: 'Schedule', path: '/app/schedule', icon: Calendar, moduleKey: 'schedule', tKey: 'nav.schedule' },
-    { name: 'Script Breakdown', path: '/app/script-breakdown', icon: FileText, moduleKey: 'script_breakdown', tKey: 'nav.script_breakdown' },
-    { name: 'Shot List', path: '/app/shot-list', icon: Camera, moduleKey: 'shot_list', tKey: 'nav.shot_list' },
-    { name: 'Storyboard', path: '/app/storyboard', icon: Image, moduleKey: 'storyboard', tKey: 'nav.storyboard' },
-    { name: 'Production Calendar', path: '/app/production-calendar', icon: Calendar, moduleKey: 'production_calendar', tKey: 'nav.production_calendar' },
-    { name: 'Cast & Crew', path: '/app/cast-crew', icon: Users, moduleKey: 'cast_crew', tKey: 'nav.cast_crew' },
-    { name: 'Locations', path: '/app/locations', icon: MapPin, moduleKey: 'locations', tKey: 'nav.locations' },
-    { name: 'Budget & Expenses', path: '/app/expenses', icon: DollarSign, moduleKey: 'expenses', tKey: 'nav.budget' },
-    { name: 'Vendors', path: '/app/vendors', icon: Building2, moduleKey: 'vendors', tKey: 'nav.vendors' },
-    { name: 'Call Sheets', path: '/app/call-sheets', icon: Clipboard, moduleKey: 'call_sheet', tKey: 'nav.call_sheets' },
-    { name: 'Progress', path: '/app/progress', icon: Activity, moduleKey: 'progress', tKey: 'nav.progress' },
-    { name: 'Tasks', path: '/app/tasks', icon: CheckSquare, moduleKey: 'tasks', tKey: 'nav.tasks' },
-    { name: 'Time Sheets', path: '/app/timesheets', icon: Clock, moduleKey: 'timesheets', tKey: 'nav.timesheets' },
-    { name: 'DPR', path: '/app/dpr', icon: BarChart2, moduleKey: 'dpr', tKey: 'nav.dpr' },
-    { name: 'Documents', path: '/app/documents', icon: Layers, moduleKey: 'documents', tKey: 'nav.documents' },
-    { name: 'Messages', path: '/app/messages', icon: MessageSquare, moduleKey: 'messaging', tKey: 'nav.messages' },
-    { name: 'Wardrobe', path: '/app/wardrobe', icon: Layers, moduleKey: 'wardrobe', tKey: 'nav.wardrobe' },
-    { name: 'Continuity', path: '/app/continuity', icon: Activity, moduleKey: 'continuity', tKey: 'nav.continuity' },
-    { name: 'Series', path: '/app/series', icon: Film, moduleKey: null, tKey: 'nav.series' },
-    { name: 'Day Out of Days', path: '/app/day-out-of-days', icon: Calendar, moduleKey: 'schedule', tKey: 'nav.day_out_of_days' },
-    { name: 'Reports', path: '/app/reports', icon: BarChart2, moduleKey: null, tKey: 'nav.reports' },
-    { name: 'Analytics', path: '/app/analytics', icon: BarChart3, moduleKey: null, tKey: 'nav.analytics' },
-    { name: 'Media Library', path: '/app/media', icon: Image, moduleKey: null, tKey: 'nav.media' },
-    { name: 'News', path: '/app/news', icon: Bell, moduleKey: null, tKey: 'nav.news' },
-    { name: 'Feature Settings', path: '/app/settings', icon: ToggleLeft, moduleKey: null, tKey: 'nav.settings' },
-    { name: 'Members', path: '/app/members', icon: UserPlus, moduleKey: null, tKey: 'nav.members' },
-    { name: 'Roles & Permissions', path: '/app/roles', icon: Shield, moduleKey: null, tKey: 'nav.roles' },
-    { name: 'Admin', path: '/app/admin', icon: Settings, moduleKey: null, adminOnly: true, tKey: 'nav.admin' },
+    { name: 'Dashboard', path: '/app/dashboard', icon: Home, moduleKey: null, viewPermission: null, tKey: 'nav.dashboard' },
+    { name: 'Scripts', path: '/app/scripts', icon: FileText, moduleKey: 'script', viewPermission: 'script.view', tKey: 'nav.script' },
+    { name: 'Schedule', path: '/app/schedule', icon: Calendar, moduleKey: 'schedule', viewPermission: 'schedule.view', tKey: 'nav.schedule' },
+    { name: 'Script Breakdown', path: '/app/script-breakdown', icon: FileText, moduleKey: 'script_breakdown', viewPermission: 'script_breakdown.view', tKey: 'nav.script_breakdown' },
+    { name: 'Shot List', path: '/app/shot-list', icon: Camera, moduleKey: 'shot_list', viewPermission: 'shot_list.view', tKey: 'nav.shot_list' },
+    { name: 'Storyboard', path: '/app/storyboard', icon: Image, moduleKey: 'storyboard', viewPermission: null, tKey: 'nav.storyboard' },
+    { name: 'Production Calendar', path: '/app/production-calendar', icon: Calendar, moduleKey: 'production_calendar', viewPermission: null, tKey: 'nav.production_calendar' },
+    { name: 'Cast & Crew', path: '/app/cast-crew', icon: Users, moduleKey: 'cast_crew', viewPermission: 'cast_crew.view', tKey: 'nav.cast_crew' },
+    { name: 'Locations', path: '/app/locations', icon: MapPin, moduleKey: 'locations', viewPermission: 'location.view', tKey: 'nav.locations' },
+    { name: 'Budget & Expenses', path: '/app/expenses', icon: DollarSign, moduleKey: 'expenses', viewPermission: 'budget.view', tKey: 'nav.budget' },
+    { name: 'Vendors', path: '/app/vendors', icon: Building2, moduleKey: 'vendors', viewPermission: 'vendor.view', tKey: 'nav.vendors' },
+    { name: 'Call Sheets', path: '/app/call-sheets', icon: Clipboard, moduleKey: 'call_sheet', viewPermission: 'call_sheet.view', tKey: 'nav.call_sheets' },
+    { name: 'Progress', path: '/app/progress', icon: Activity, moduleKey: 'progress', viewPermission: 'progress.view', tKey: 'nav.progress' },
+    { name: 'Tasks', path: '/app/tasks', icon: CheckSquare, moduleKey: 'tasks', viewPermission: 'task.view', tKey: 'nav.tasks' },
+    { name: 'Time Sheets', path: '/app/timesheets', icon: Clock, moduleKey: 'timesheets', viewPermission: 'timesheet.view', tKey: 'nav.timesheets' },
+    { name: 'DPR', path: '/app/dpr', icon: BarChart2, moduleKey: 'dpr', viewPermission: 'dpr.view', tKey: 'nav.dpr' },
+    { name: 'Documents', path: '/app/documents', icon: Layers, moduleKey: 'documents', viewPermission: 'document.view', tKey: 'nav.documents' },
+    { name: 'Messages', path: '/app/messages', icon: MessageSquare, moduleKey: 'messaging', viewPermission: 'message.view', tKey: 'nav.messages' },
+    { name: 'Wardrobe', path: '/app/wardrobe', icon: Layers, moduleKey: 'wardrobe', viewPermission: 'wardrobe.view', tKey: 'nav.wardrobe' },
+    { name: 'Continuity', path: '/app/continuity', icon: Activity, moduleKey: 'continuity', viewPermission: 'continuity.view', tKey: 'nav.continuity' },
+    { name: 'Series', path: '/app/series', icon: Film, moduleKey: null, viewPermission: null, tKey: 'nav.series' },
+    { name: 'Day Out of Days', path: '/app/day-out-of-days', icon: Calendar, moduleKey: 'schedule', viewPermission: 'schedule.view', tKey: 'nav.day_out_of_days' },
+    { name: 'Reports', path: '/app/reports', icon: BarChart2, moduleKey: null, viewPermission: null, tKey: 'nav.reports' },
+    { name: 'Analytics', path: '/app/analytics', icon: BarChart3, moduleKey: null, viewPermission: null, tKey: 'nav.analytics' },
+    { name: 'Media Library', path: '/app/media', icon: Image, moduleKey: null, viewPermission: null, tKey: 'nav.media' },
+    { name: 'News', path: '/app/news', icon: Bell, moduleKey: null, viewPermission: null, tKey: 'nav.news' },
+    { name: 'Feature Settings', path: '/app/settings', icon: ToggleLeft, moduleKey: null, viewPermission: null, tKey: 'nav.settings' },
+    { name: 'Members', path: '/app/members', icon: UserPlus, moduleKey: null, viewPermission: null, tKey: 'nav.members' },
+    { name: 'Roles & Permissions', path: '/app/roles', icon: Shield, moduleKey: null, viewPermission: null, tKey: 'nav.roles' },
+    { name: 'Admin', path: '/app/admin', icon: Settings, moduleKey: null, viewPermission: null, adminOnly: true, tKey: 'nav.admin' },
   ];
 
   const visibleNavItems = navItems.filter(item => {
     if (user?.is_super_admin === true || user?.is_super_admin === 1) return true;
     if (item.adminOnly) return false;
     if (item.moduleKey && !perm.hasModule(item.moduleKey)) return false;
+    if (item.viewPermission && !perm.can(item.viewPermission)) return false;
     return true;
   });
 
@@ -93,10 +94,15 @@ export default function Layout() {
     if (user?.is_super_admin) return;
     if (!currentFilm?.modules) return;
     const item = navItems.find(i => i.path === location.pathname);
-    if (item?.moduleKey && !perm.hasModule(item.moduleKey)) {
+    if (!item) return;
+    if (item.adminOnly) return;
+    if (item.moduleKey && !perm.hasModule(item.moduleKey)) {
       navigate('/app/dashboard');
     }
-  }, [currentFilm?.modules, location.pathname, user?.is_super_admin]);
+    if (item.viewPermission && !perm.can(item.viewPermission)) {
+      navigate('/app/dashboard');
+    }
+  }, [currentFilm?.modules, location.pathname, user?.is_super_admin, perm.can, perm.hasModule]);
 
   const SidebarContent = () => (
     <>
