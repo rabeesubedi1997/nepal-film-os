@@ -81,7 +81,7 @@ export default function Layout() {
   ];
 
   const visibleNavItems = navItems.filter(item => {
-    if (user?.is_super_admin) return true;
+    if (user?.is_super_admin === true || user?.is_super_admin === 1) return true;
     if (item.adminOnly) return false;
     if (item.moduleKey && !perm.hasModule(item.moduleKey)) return false;
     return true;

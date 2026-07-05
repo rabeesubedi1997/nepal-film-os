@@ -5,7 +5,7 @@ export function usePermission() {
 
   const can = (permission) => {
     if (!currentFilm) return false;
-    if (user?.is_super_admin) return true;
+    if (user?.is_super_admin === true || user?.is_super_admin === 1) return true;
     if (userIsAdmin) return true;
     return userPermissions?.includes(permission) || false;
   };
@@ -25,7 +25,7 @@ export function usePermission() {
     return mod ? mod.is_enabled : false;
   };
 
-  const isSuperAdmin = !!user?.is_super_admin;
+  const isSuperAdmin = user?.is_super_admin === true || user?.is_super_admin === 1;
   const isFilmAdmin = !!userIsAdmin;
   const isAdmin = isSuperAdmin || isFilmAdmin;
 
