@@ -3,6 +3,7 @@ import {
   ArrowRight,
   Bold, Italic, Underline as UnderlineIcon, Link,
   Minus, RemoveFormatting, List, ListOrdered as ListOrderedIcon,
+  Type,
 } from 'lucide-react';
 import { ELEMENT_TYPES } from '../extensions';
 
@@ -24,6 +25,19 @@ const typeLabels = {
   'transition': 'Transition',
 };
 
+const FONT_FAMILIES = [
+  { value: 'inherit', label: 'Default (Screenplay)' },
+  { value: '"Noto Sans Devanagari", sans-serif', label: 'Noto Sans Devanagari (Nepali/Hindi)' },
+  { value: '"Noto Sans", sans-serif', label: 'Noto Sans (Multi-script)' },
+  { value: '"Courier Prime", "Courier New", monospace', label: 'Courier Prime (Screenplay)' },
+  { value: '"Courier New", Courier, monospace', label: 'Courier New' },
+  { value: 'Arial, "Helvetica Neue", Helvetica, sans-serif', label: 'Arial' },
+  { value: '"Times New Roman", Times, serif', label: 'Times New Roman' },
+  { value: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif', label: 'Segoe UI' },
+  { value: 'Georgia, serif', label: 'Georgia' },
+  { value: '"Microsoft YaHei", "PingFang SC", sans-serif', label: 'Chinese/Japanese' },
+];
+
 const MenuButton = ({ onClick, active, children, title }) => (
   <button type="button" onClick={onClick} title={title}
     className={`p-1.5 rounded transition-colors ${active ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>
@@ -32,6 +46,33 @@ const MenuButton = ({ onClick, active, children, title }) => (
 );
 
 const Divider = () => <div className="w-px h-5 bg-slate-700 mx-1" />;
+
+const FontSelector = ({ editor }) => {
+  const currentFont = editor.getAttributes('fontFamily') || 'inherit';
+  const handleChange = (e) => {
+    const font = e.target.value;
+    if (font === 'inherit') {
+      editor.chain().focus().unsetFontFamily().run();
+    } else {
+      editor.chain().focus().setFontFamily(font).run();
+    }
+  };
+  
+  return (
+    <select
+      value={currentFont}
+      onChange={handleChange}
+      className="bg-slate-800 border border-slate-700 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 cursor-pointer min-w-[180px]"
+      title="Font Family"
+    >
+      {FONT_FAMILIES.map((font) => (
+        <option key={font.value} value={font.value} style={{ fontFamily: font.value.replace(/['"]/g, '').split(',')[0].trim() }}>
+          {font.label}
+        </option>
+      ))}
+    </select>
+  );
+};
 
 export default function ScriptToolbar({ editor }) {
   if (!editor) return null;
@@ -101,6 +142,9 @@ export default function ScriptToolbar({ editor }) {
       <MenuButton onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Clear Formatting">
         <RemoveFormatting className="h-3.5 w-3.5" />
       </MenuButton>
+
+      <Divider />
+      <FontSelector editor={editor} />
     </div>
   );
 }
