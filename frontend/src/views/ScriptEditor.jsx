@@ -34,6 +34,27 @@ const DEFAULT_TITLE = 'Untitled Script';
 
 const EMPTY_CONTENT = `<div data-type="scene-heading">INT. ROOM - DAY</div><div data-type="action">A desk is covered in papers.</div><div data-type="action">&nbsp;</div><div data-type="character">WRITER</div><div data-type="parenthetical">(quietly)</div><div data-type="dialogue">Time to write.</div><div data-type="action">&nbsp;</div><div data-type="transition">FADE OUT.</div>`;
 
+const LanguageSelector = () => {
+  const { language, setLanguage } = useLanguageStore();
+  const LANGUAGES = [
+    { code: 'en', label: 'English' },
+    { code: 'ne', label: 'नेपाली' },
+    { code: 'hi', label: 'हिन्दी' },
+  ];
+  return (
+    <select
+      value={language}
+      onChange={(e) => setLanguage(e.target.value)}
+      className="bg-slate-800 border border-slate-700 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 cursor-pointer min-w-[120px]"
+      title="Document Language"
+    >
+      {LANGUAGES.map((l) => (
+        <option key={l.code} value={l.code}>{l.label}</option>
+      ))}
+    </select>
+  );
+};
+
 function textToScreenplayHtml(text) {
   const lines = text.split('\n');
   return lines.map(line => {
@@ -519,7 +540,7 @@ export default function ScriptEditor() {
             </select>
             <ZoomIn className="h-3.5 w-3.5 text-slate-500" />
           </div>
-          <LanguageSelector editor={editor} />
+          <LanguageSelector />
           <button onClick={() => setShowPreview(!showPreview)} className={`p-1.5 rounded transition ${showPreview ? 'bg-amber-500/10 text-amber-400' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'}`} title="Preview">
             <Eye className="h-4 w-4" />
           </button>
