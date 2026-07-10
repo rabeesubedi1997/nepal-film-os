@@ -6,7 +6,8 @@ import TextAlign from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
 import LinkExtension from '@tiptap/extension-link';
 import CharacterCount from '@tiptap/extension-character-count';
-import FontFamily from '@tiptap/extension-font-family';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { FontFamily } from '@tiptap/extension-font-family';
 import { ScreenplayNode, detectElementType, ELEMENT_TYPES } from '../extensions';
 import ScriptToolbar from '../components/ScriptToolbar';
 import TitlePageEditor, { extractTitlePage, wrapTitlePage, buildTitlePageHtml } from '../components/TitlePageEditor';
@@ -169,6 +170,7 @@ export default function ScriptEditor() {
       Placeholder.configure({ placeholder: 'Start writing your script...' }),
       LinkExtension.configure({ openOnClick: false }),
       CharacterCount,
+      TextStyle,
       FontFamily.configure({
         types: ['paragraph', 'heading'],
       }),
