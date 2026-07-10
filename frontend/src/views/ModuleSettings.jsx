@@ -36,7 +36,7 @@ export default function ModuleSettings() {
   const moduleStatus = (key) => {
     if (!currentFilm?.modules) return true;
     const m = currentFilm.modules.find(mod => mod.module_name === key);
-    return m ? m.is_enabled : true;
+    return m ? m.is_enabled : false;
   };
 
   const handleToggle = async (key, currentlyEnabled) => {

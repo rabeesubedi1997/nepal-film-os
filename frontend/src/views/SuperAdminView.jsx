@@ -3,6 +3,7 @@ import { Shield, Film, Users, CreditCard, Plus, Edit3, Trash2, CheckCircle, Aler
 import api from '../api';
 import { Modal, Input, Badge, Button } from '../components/ui';
 import { useToastStore } from '../toastStore';
+import { useAuthStore } from '../authStore';
 
 const getErrMsg = (err, fallback) => {
   const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message;
@@ -109,6 +110,10 @@ export default function SuperAdminView() {
         module_name: moduleName,
         is_enabled: !currentlyEnabled,
       });
+      const { selectFilm, currentFilm } = useAuthStore.getState();
+      if (currentFilm?.id === featuresFilm.id) {
+        await selectFilm(featuresFilm.id);
+      }
     } catch (err) {
       addToast(getErrMsg(err, 'Failed to toggle feature'), 'error');
       setFeaturesList(prev => prev.map(f =>

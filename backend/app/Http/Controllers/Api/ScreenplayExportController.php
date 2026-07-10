@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Process;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Symfony\Component\Process\Process as SymfonyProcess;
 
 class ScreenplayExportController extends Controller
@@ -31,21 +32,28 @@ class ScreenplayExportController extends Controller
         // Build full HTML with screenplay CSS
         $fullHtml = $this->buildPrintHtml($html, $title, $fontSize, $fontFamily);
 
-        // Try Puppeteer/Chrome headless first
-        $pdfPath = $this->generatePdfWithChrome($fullHtml);
-        
-        if ($pdfPath && file_exists($pdfPath)) {
-            return response()->file($pdfPath, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="' . $title . '.pdf"',
-            ])->deleteFileAfterSend(true);
-        }
+        // Generate PDF using DomPDF
+        try {
+            $pdf = Pdf::loadHTML($fullHtml);
+            $pdf->setPaper('letter');
+            return $pdf->download($title . '.pdf');
+        } catch (\Exception $e) {
+            // Fallback: try Chrome headless
+            $pdfPath = $this->generatePdfWithChrome($fullHtml);
+            
+            if ($pdfPath && file_exists($pdfPath)) {
+                return response()->file($pdfPath, [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'attachment; filename="' . $title . '.pdf"',
+                ])->deleteFileAfterSend(true);
+            }
 
-        // Fallback: return HTML for browser print
-        return response($fullHtml, 200, [
-            'Content-Type' => 'text/html',
-            'Content-Disposition' => 'inline; filename="' . $title . '.html"',
-        ]);
+            // Last resort: return HTML
+            return response($fullHtml, 200, [
+                'Content-Type' => 'text/html',
+                'Content-Disposition' => 'inline; filename="' . $title . '.html"',
+            ]);
+        }
     }
 
     public function exportDOCX(Request $request, $filmId, $scriptId)
@@ -60,13 +68,11 @@ class ScreenplayExportController extends Controller
         $html = $request->input('html');
         $title = $request->input('title', $script->title);
 
-        // Convert HTML to DOCX using LibreOffice or mammoth-like conversion
-        // For now, return HTML with .docx extension (browser will handle)
         $fullHtml = $this->buildDocxHtml($html, $title);
 
         return response($fullHtml, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'Content-Disposition' => 'attachment; filename="' . $title . '.docx"',
+            'Content-Disposition' => 'attachment; filename="' . $title . '.doc"',
         ]);
     }
 

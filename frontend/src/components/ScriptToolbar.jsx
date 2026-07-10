@@ -3,9 +3,10 @@ import {
   ArrowRight,
   Bold, Italic, Underline as UnderlineIcon, Link,
   Minus, RemoveFormatting, List, ListOrdered as ListOrderedIcon,
-  Type,
+  Type, Languages,
 } from 'lucide-react';
 import { ELEMENT_TYPES } from '../extensions';
+import { transliterateWord } from '../services/transliteration';
 
 const typeIcons = {
   'scene-heading': MapPin,
@@ -145,6 +146,20 @@ export default function ScriptToolbar({ editor }) {
       </MenuButton>
       <MenuButton onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Clear Formatting">
         <RemoveFormatting className="h-3.5 w-3.5" />
+      </MenuButton>
+
+      <Divider />
+
+      <MenuButton onClick={() => {
+        const { from, to, empty } = editor.state.selection;
+        if (empty) return;
+        const text = editor.state.doc.textBetween(from, to);
+        const converted = transliterateWord(text);
+        if (converted !== text) {
+          editor.chain().focus().deleteSelection().insertContent(converted).run();
+        }
+      }} title="Convert selected text to Devanagari (Ctrl+T)">
+        <Languages className="h-3.5 w-3.5" />
       </MenuButton>
 
     </div>

@@ -22,7 +22,7 @@ import { useAuthStore } from '../authStore';
 import { useToastStore } from '../toastStore';
 import echo from '../echo';
 import { useLanguageStore } from '../languageStore';
-import { isTransliterationEnabled, transliterateWord } from '../services/transliteration';
+import { transliterateWord } from '../services/transliteration';
 import {
   Plus, Eye, Trash2, Save, FileText,
   Loader, BookOpen, Code, Upload, Download as DownloadIcon, Users, Scissors,
@@ -182,29 +182,18 @@ export default function ScriptEditor() {
         class: 'prose prose-sm prose-invert max-w-none focus:outline-none min-h-[500px] p-6 bg-slate-900 screenplay-editor',
       },
       handleKeyDown: (view, event) => {
-        if (event.key === ' ') {
-          const { language } = useLanguageStore.getState();
-          if (isTransliterationEnabled(language)) {
-            const { state, dispatch } = view;
-            const { selection, tr } = state;
-            const { $from } = selection;
-            const parent = $from.parent;
-            const textBefore = parent.textBetween(0, $from.parentOffset);
-            const match = textBefore.match(/(\S+)$/);
-            if (match) {
-              const word = match[1];
-              const converted = transliterateWord(word);
-              if (converted !== word) {
-                event.preventDefault();
-                const start = $from.start() + match.index;
-                const end = $from.start() + $from.parentOffset;
-                tr.replaceWith(start, end, state.schema.text(converted));
-                tr.insert(start + converted.length, state.schema.text(' '));
-                dispatch(tr);
-                return true;
-              }
-            }
+        if ((event.ctrlKey || event.metaKey) && event.key === 't') {
+          event.preventDefault();
+          const { from, to, empty } = view.state.selection;
+          if (empty) return true;
+          const text = view.state.doc.textBetween(from, to);
+          const converted = transliterateWord(text);
+          if (converted !== text) {
+            const { tr } = view.state;
+            tr.replaceWith(from, to, view.state.schema.text(converted));
+            view.dispatch(tr);
           }
+          return true;
         }
         return false;
       },
