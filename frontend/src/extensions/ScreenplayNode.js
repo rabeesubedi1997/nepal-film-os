@@ -36,6 +36,7 @@ export const ScreenplayNode = Paragraph.extend({
         parseHTML: element => element.getAttribute('data-element-type') || element.getAttribute('data-type') || 'action',
         renderHTML: attributes => ({
           'data-element-type': attributes.elementType,
+          'data-type': attributes.elementType,
           class: `screenplay-${attributes.elementType}`,
         }),
       },
@@ -62,6 +63,7 @@ export const ScreenplayNode = Paragraph.extend({
       ...HTMLAttributes,
       class: `screenplay-element screenplay-${type}`,
       'data-element-type': type,
+      'data-type': type,
     }, 0];
   },
 

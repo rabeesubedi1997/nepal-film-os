@@ -48,7 +48,7 @@ const MenuButton = ({ onClick, active, children, title }) => (
 const Divider = () => <div className="w-px h-5 bg-slate-700 mx-1" />;
 
 const FontSelector = ({ editor }) => {
-  const currentFont = editor.getAttributes('fontFamily') || 'inherit';
+  const currentFont = editor.getAttributes('textStyle').fontFamily || 'inherit';
   const handleChange = (e) => {
     const font = e.target.value;
     if (font === 'inherit') {
@@ -62,7 +62,7 @@ const FontSelector = ({ editor }) => {
     <select
       value={currentFont}
       onChange={handleChange}
-      className="bg-slate-800 border border-slate-700 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 cursor-pointer min-w-[180px]"
+      className="bg-slate-800 border border-slate-700 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 cursor-pointer min-w-[140px]"
       title="Font Family"
     >
       {FONT_FAMILIES.map((font) => (
@@ -77,16 +77,13 @@ const FontSelector = ({ editor }) => {
 export default function ScriptToolbar({ editor }) {
   if (!editor) return null;
 
-  const currentType = editor.getAttributes('paragraph').elementType || 'action';
-  const isScreenplay = editor.isActive('paragraph');
-
   const setType = (type) => {
     editor.chain().focus().setScreenplayElement(type).run();
   };
 
   return (
-    <div className="flex items-center flex-wrap gap-0.5 px-1 py-1 bg-slate-900 rounded-lg border border-slate-800">
-      <div className="flex items-center gap-0.5 mr-1 pr-1 border-r border-slate-700">
+    <div className="flex items-center gap-1 px-2 py-1 bg-slate-900 rounded-lg border border-slate-800">
+      <div className="flex items-center gap-1 mr-1 pr-2 border-r border-slate-700">
         {ELEMENT_TYPES.filter(t => t !== 'shot' && t !== 'general').map((type, i) => {
           const Icon = typeIcons[type];
           const label = typeLabels[type];
@@ -94,7 +91,7 @@ export default function ScriptToolbar({ editor }) {
             <MenuButton
               key={type}
               onClick={() => setType(type)}
-              active={isScreenplay && currentType === type}
+              active={editor.isActive('paragraph', { elementType: type })}
               title={`${label} (Ctrl+${i + 1})`}
             >
               <Icon className="h-3.5 w-3.5" />
@@ -143,8 +140,8 @@ export default function ScriptToolbar({ editor }) {
         <RemoveFormatting className="h-3.5 w-3.5" />
       </MenuButton>
 
-      <Divider />
-      <FontSelector editor={editor} />
     </div>
   );
 }
+
+export { FontSelector };

@@ -9,7 +9,7 @@ import CharacterCount from '@tiptap/extension-character-count';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
 import { ScreenplayNode, detectElementType } from '../extensions';
-import ScriptToolbar from '../components/ScriptToolbar';
+import ScriptToolbar, { FontSelector } from '../components/ScriptToolbar';
 import LanguageSelector from '../components/LanguageSelector';
 import TitlePageEditor, { extractTitlePage, wrapTitlePage, buildTitlePageHtml } from '../components/TitlePageEditor';
 import ScriptReports from '../components/ScriptReports';
@@ -514,23 +514,42 @@ export default function ScriptEditor() {
   return (
     <div className="flex flex-col h-screen bg-slate-950 text-slate-100">
       {/* Top Toolbar */}
-      <header className="h-11 flex items-center justify-between px-4 border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-40">
-        <div className="flex items-center gap-3">
-          <button onClick={handleNew} className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition" title="New Script (Ctrl+N)">
+      <header className="min-h-11 flex items-center flex-wrap gap-y-1 justify-between px-4 py-1 border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-40">
+        <div className="flex items-center flex-wrap gap-y-1 gap-2">
+          <button onClick={handleNew} className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition shrink-0" title="New Script (Ctrl+N)">
             <FilePlus className="h-4 w-4" />
           </button>
-          <button onClick={handleSave} disabled={saving} className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition disabled:opacity-50" title="Save (Ctrl+S)">
+          <button onClick={handleSave} disabled={saving} className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition disabled:opacity-50 shrink-0" title="Save (Ctrl+S)">
             <Save className="h-4 w-4" />
           </button>
-          <div className="w-px h-5 bg-slate-700 mx-1" />
+          <button onClick={() => fileInputRef.current?.click()} className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition shrink-0" title="Import (.fountain, .txt, .docx, .pdf)">
+            <Upload className="h-4 w-4" />
+          </button>
+          <div className="w-px h-5 bg-slate-700 mx-0.5 shrink-0" />
           <ScriptToolbar editor={editor} />
-          <div className="w-px h-5 bg-slate-700 mx-1" />
-          <button onClick={() => setShowFindReplace(!showFindReplace)} className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition" title="Find & Replace (Ctrl+F)">
+          <div className="w-px h-5 bg-slate-700 mx-0.5 shrink-0" />
+          <button onClick={() => setShowFindReplace(!showFindReplace)} className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition shrink-0" title="Find & Replace (Ctrl+F)">
             <Search className="h-4 w-4" />
           </button>
-          <button onClick={handlePrintPdf} className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition" title="Print to PDF (Ctrl+P)">
+          <button onClick={handlePrintPdf} className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-100 transition shrink-0" title="Print to PDF (Ctrl+P)">
             <FileText className="h-4 w-4" />
           </button>
+          <div className="relative group">
+            <button className="p-1.5 rounded text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition shrink-0" title="Export">
+              <DownloadIcon className="h-4 w-4" />
+            </button>
+            <div className="absolute left-0 top-full mt-1 w-44 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+              <button onClick={handleExportFountain} className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700 first:rounded-t-lg">Export Fountain</button>
+              <button onClick={handleExportTxt} className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700">Export Plain Text</button>
+              <button onClick={handleExportHtml} className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700">Export HTML</button>
+              <button onClick={handleExportDocx} className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700">Export DOCX</button>
+              <div className="border-t border-slate-700 my-1" />
+              <span className="block px-3 py-1 text-[10px] text-slate-500 uppercase tracking-wider">Server-side</span>
+              <button onClick={() => handleServerExport('pdf')} className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700">Export PDF (server)</button>
+              <button onClick={() => handleServerExport('docx')} className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700">Export DOCX (server)</button>
+              <button onClick={() => handleServerExport('fountain')} className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700 last:rounded-b-lg">Export Fountain (server)</button>
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -549,7 +568,8 @@ export default function ScriptEditor() {
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center flex-wrap gap-y-1 gap-2">
+          <FontSelector editor={editor} />
           <div className="flex items-center gap-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1">
             <ZoomOut className="h-3.5 w-3.5 text-slate-500" />
             <select value={zoom} onChange={e => setZoom(Number(e.target.value))} className="bg-transparent border-none text-slate-200 text-xs focus:outline-none w-16 appearance-none cursor-pointer">
@@ -570,25 +590,13 @@ export default function ScriptEditor() {
             <button onClick={() => setShowSource(!showSource)} className={`p-1.5 rounded transition ${showSource ? 'bg-amber-500/10 text-amber-400' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'}`} title="Source">
               <Code className="h-4 w-4" />
             </button>
-            {activeId && (
-              <div className="relative group">
-                <button className="p-1.5 rounded text-slate-400 hover:text-slate-100 hover:bg-slate-800" title="Server Export">
-                  <DownloadIcon className="h-4 w-4" />
-                </button>
-                <div className="absolute right-0 top-full mt-1 w-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                  <button onClick={() => handleServerExport('pdf')} className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700 first:rounded-t-lg">Export PDF</button>
-                  <button onClick={() => handleServerExport('docx')} className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700">Export DOCX</button>
-                  <button onClick={() => handleServerExport('fountain')} className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700 last:rounded-b-lg">Export Fountain</button>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </header>
 
       {/* Find/Replace Bar */}
       {showFindReplace && (
-        <div className="h-10 flex items-center gap-2 px-4 border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-11 z-30">
+        <div className="h-10 flex items-center gap-2 px-4 border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm z-30">
           <input type="text" placeholder="Find..." className="flex-1 max-w-md bg-slate-800 border border-slate-700 text-slate-100 text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-500" />
           <input type="text" placeholder="Replace..." className="max-w-md bg-slate-800 border border-slate-700 text-slate-100 text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-amber-500" />
           <button className="px-3 py-1.5 bg-amber-500/10 text-amber-400 rounded-lg hover:bg-amber-500/20 text-xs">Replace</button>
