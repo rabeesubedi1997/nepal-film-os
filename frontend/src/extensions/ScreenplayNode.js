@@ -32,7 +32,7 @@ export function detectElementType(text) {
 }
 
 export const ScreenplayNode = Node.create({
-  name: 'screenplayNode',
+  name: 'paragraph',
   group: 'block',
   content: 'inline*',
   defining: true,
@@ -42,7 +42,7 @@ export const ScreenplayNode = Node.create({
     return {
       elementType: {
         default: 'action',
-        parseHTML: element => element.getAttribute('data-element-type') || 'action',
+        parseHTML: element => element.getAttribute('data-element-type') || element.getAttribute('data-type') || 'action',
         renderHTML: attributes => ({
           'data-element-type': attributes.elementType,
           class: `screenplay-${attributes.elementType}`,
@@ -58,8 +58,10 @@ export const ScreenplayNode = Node.create({
 
   parseHTML() {
     return [
-      { tag: 'p[data-element-type]', priority: 100 },
-      { tag: 'div[data-element-type]', priority: 100 },
+      { tag: 'p[data-element-type]' },
+      { tag: 'div[data-element-type]' },
+      { tag: 'div[data-type]' },
+      { tag: 'p[data-type]' },
     ];
   },
 
@@ -80,27 +82,22 @@ export const ScreenplayNode = Node.create({
     return {
       setScreenplayElement: (elementType) => ({ commands, editor }) => {
         if (!ELEMENT_TYPES.includes(elementType)) return false;
-        const { selection, schema } = editor.state;
+        const { selection } = editor.state;
         const { $from } = selection;
         
-        // Find the screenplay node at current position
         for (let depth = $from.depth; depth > 0; depth--) {
           const node = $from.node(depth);
-          if (node.type.name === 'screenplayNode') {
+          if (node.type.name === 'paragraph') {
             const pos = $from.before(depth);
             return commands.setNodeMarkup(pos, undefined, { ...node.attrs, elementType });
           }
         }
         
-        // If not in a screenplay node, create new one
         return commands.insertContent({
-          type: 'screenplayNode',
+          type: 'paragraph',
           attrs: { elementType },
           content: [{ type: 'text', text: '\u00A0' }],
         });
-      },
-      setScreenplayElement: (elementType) => ({ commands }) => {
-        return commands.setScreenplayElement(elementType);
       },
     };
   },

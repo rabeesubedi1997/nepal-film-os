@@ -77,17 +77,17 @@ const FontSelector = ({ editor }) => {
 export default function ScriptToolbar({ editor }) {
   if (!editor) return null;
 
-  const currentType = editor.getAttributes('paragraph').type || 'action';
+  const currentType = editor.getAttributes('paragraph').elementType || 'action';
   const isScreenplay = editor.isActive('paragraph');
 
   const setType = (type) => {
-    editor.chain().focus().setScriptElement(type).run();
+    editor.chain().focus().setScreenplayElement(type).run();
   };
 
   return (
     <div className="flex items-center flex-wrap gap-0.5 px-1 py-1 bg-slate-900 rounded-lg border border-slate-800">
       <div className="flex items-center gap-0.5 mr-1 pr-1 border-r border-slate-700">
-        {Object.keys(ELEMENT_TYPES).map((type) => {
+        {ELEMENT_TYPES.filter(t => t !== 'shot' && t !== 'general').map((type, i) => {
           const Icon = typeIcons[type];
           const label = typeLabels[type];
           return (
@@ -95,7 +95,7 @@ export default function ScriptToolbar({ editor }) {
               key={type}
               onClick={() => setType(type)}
               active={isScreenplay && currentType === type}
-              title={`${label} (${ELEMENT_TYPES[type].shortcut})`}
+              title={`${label} (Ctrl+${i + 1})`}
             >
               <Icon className="h-3.5 w-3.5" />
             </MenuButton>
