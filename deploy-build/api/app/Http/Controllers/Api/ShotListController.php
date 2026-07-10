@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\ShotList;
 use Illuminate\Http\Request;
 
 class ShotListController extends Controller
 {
+    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
         $shots = ShotList::where('film_id', $filmId)
@@ -30,6 +32,7 @@ class ShotListController extends Controller
 
     public function store(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'shot_list.create');
         $validated = $request->validate([
             'scene_id' => 'required|integer|exists:scenes,id',
             'shot_number' => 'required|string',
@@ -63,6 +66,7 @@ class ShotListController extends Controller
 
     public function update(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'shot_list.edit');
         $shot = ShotList::where('film_id', $filmId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -84,6 +88,7 @@ class ShotListController extends Controller
 
     public function destroy(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'shot_list.delete');
         $shot = ShotList::where('film_id', $filmId)->findOrFail($id);
         $shot->delete();
 

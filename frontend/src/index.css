@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Courier+Prime&display=swap');
 
 @theme {
   --color-brand-50:  #fefbeb;
@@ -230,4 +230,134 @@ select.input-field { cursor: pointer; }
   font-style: italic;
   color: #64748b;
   margin: 0.5em 0;
+}
+
+/* ── Screenplay Editor ────────────────────── */
+.screenplay-editor {
+  font-family: 'Courier Prime', 'Courier New', 'Noto Sans Devanagari', Courier, monospace;
+  font-size: 12pt;
+  line-height: 1.5;
+  max-width: 6.5in;
+  margin: 0 auto;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+.screenplay-editor:focus-within {
+  border-color: #e2a309;
+}
+.screenplay-editor .ProseMirror {
+  outline: none;
+  min-height: 400px;
+  padding: 0;
+}
+.screenplay-editor .ProseMirror p {
+  margin: 0;
+}
+.screenplay-editor [data-type="scene-heading"],
+.screenplay-preview [data-type="scene-heading"] {
+  margin: 1.2em 0 0 0;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 12pt;
+  letter-spacing: 0.02em;
+}
+.screenplay-editor [data-type="action"],
+.screenplay-preview [data-type="action"] {
+  margin: 0 0 0.5em 0;
+  font-size: 12pt;
+}
+.screenplay-editor [data-type="character"],
+.screenplay-preview [data-type="character"] {
+  margin: 1em 0 0 0;
+  text-transform: uppercase;
+  margin-left: 2.5in;
+  max-width: 3.5in;
+  font-size: 12pt;
+  letter-spacing: 0.02em;
+}
+.screenplay-editor [data-type="parenthetical"],
+.screenplay-preview [data-type="parenthetical"] {
+  margin: 0.2em 0 0.2em 2in;
+  max-width: 3in;
+  font-style: italic;
+  font-size: 12pt;
+}
+.screenplay-editor [data-type="dialogue"],
+.screenplay-preview [data-type="dialogue"] {
+  margin: 0 0 0.2em 1.5in;
+  max-width: 3.5in;
+  font-size: 12pt;
+}
+.screenplay-editor [data-type="transition"],
+.screenplay-preview [data-type="transition"] {
+  margin: 1em 0;
+  text-transform: uppercase;
+  text-align: right;
+  max-width: 6.5in;
+  font-size: 12pt;
+}
+.screenplay-editor .ProseMirror-gapcursor {
+  display: none;
+}
+.screenplay-editor .ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #475569;
+  pointer-events: none;
+  height: 0;
+}
+
+/* ── TipTap placeholder ────────────────────── */
+.tiptap p.is-editor-empty:first-child::before {
+  color: #475569;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ── Screenplay Preview ────────────────────── */
+.screenplay-preview {
+  font-family: 'Courier Prime', 'Courier New', 'Noto Sans Devanagari', Courier, monospace;
+  font-size: 12pt;
+  line-height: 1.5;
+  max-width: 6.5in;
+  margin: 0 auto;
+  color: #e2e8f0;
+}
+
+/* ── Page count estimate ───────────────────── */
+@page {
+  size: letter;
+  margin: 0.5in 1in 0.5in 1.5in;
+}
+
+/* ── Stageplay Format ────────────────────── */
+.stageplay-mode [data-type="scene-heading"] {
+  text-transform: none;
+  font-style: italic;
+  font-weight: 600;
+  margin-left: 0;
+  font-size: 11pt;
+}
+.stageplay-mode [data-type="character"] {
+  text-align: center;
+  margin-left: 0;
+  text-transform: none;
+  max-width: none;
+  font-size: 11pt;
+}
+.stageplay-mode [data-type="dialogue"] {
+  margin-left: 1in;
+  margin-right: 1in;
+  max-width: none;
+  font-size: 11pt;
+}
+.stageplay-mode [data-type="parenthetical"] {
+  margin-left: 1.5in;
+  font-style: italic;
+  font-size: 11pt;
+}
+.stageplay-mode [data-type="action"] {
+  font-size: 11pt;
 }

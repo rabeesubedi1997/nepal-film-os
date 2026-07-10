@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\CallSheet;
 use App\Models\CallSheetEntry;
 use App\Models\Schedule;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Mail;
 
 class CallSheetController extends Controller
 {
+    use FilmPermissionTrait;
     /**
      * Get all call sheets for a film.
      */
@@ -45,6 +47,7 @@ class CallSheetController extends Controller
      */
     public function store(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'call_sheet.create');
         $validated = $request->validate([
             'schedule_id' => 'required|integer|exists:schedules,id',
             'general_call_time' => 'required|string',
@@ -104,6 +107,7 @@ class CallSheetController extends Controller
      */
     public function update(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'call_sheet.edit');
         $callSheet = CallSheet::where('film_id', $filmId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -125,6 +129,7 @@ class CallSheetController extends Controller
      */
     public function destroy(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'call_sheet.delete');
         $callSheet = CallSheet::where('film_id', $filmId)->findOrFail($id);
         $callSheet->entries()->delete();
         $callSheet->delete();
@@ -137,9 +142,10 @@ class CallSheetController extends Controller
      */
     public function acknowledge(Request $request, $filmId, $entryId)
     {
-        $entry = CallSheetEntry::findOrFail($entryId);
+        $entry = CallSheetEntry::whereHas('callSheet', function ($q) use ($filmId) {
+            $q->where('film_id', $filmId);
+        })->findOrFail($entryId);
 
-        // Optional verify that the user owns the cast_crew profile (via email/phone comparison)
         $entry->update([
             'is_acknowledged' => true,
             'acknowledged_at' => now(),

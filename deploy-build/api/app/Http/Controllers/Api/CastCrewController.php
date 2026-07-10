@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\CastCrew;
 use Illuminate\Http\Request;
 
 class CastCrewController extends Controller
 {
+    use FilmPermissionTrait;
     /**
      * Get all cast and crew profiles for a film.
      */
@@ -27,6 +29,7 @@ class CastCrewController extends Controller
      */
     public function store(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'cast_crew.create');
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'role_type' => 'required|string|in:Cast,Crew',
@@ -67,6 +70,7 @@ class CastCrewController extends Controller
      */
     public function update(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'cast_crew.edit');
         $member = CastCrew::where('film_id', $filmId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -94,6 +98,7 @@ class CastCrewController extends Controller
      */
     public function destroy(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'cast_crew.delete');
         $member = CastCrew::where('film_id', $filmId)->findOrFail($id);
         $member->delete();
 

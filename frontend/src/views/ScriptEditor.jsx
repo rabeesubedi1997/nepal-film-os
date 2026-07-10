@@ -1,34 +1,99 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
 import LinkExtension from '@tiptap/extension-link';
+import CharacterCount from '@tiptap/extension-character-count';
+import { ScreenplayNode, detectElementType } from '../extensions';
+import ScriptToolbar from '../components/ScriptToolbar';
+import TitlePageEditor, { extractTitlePage, wrapTitlePage, buildTitlePageHtml } from '../components/TitlePageEditor';
+import ScriptReports from '../components/ScriptReports';
+import ReadThrough from '../components/ReadThrough';
+import ScriptComments from '../components/ScriptComments';
+import ScriptHistory from '../components/ScriptHistory';
 import { scriptService } from '../services/scriptService';
 import { useAuthStore } from '../authStore';
 import { useToastStore } from '../toastStore';
 import echo from '../echo';
 import {
   Plus, Eye, Trash2, Save, FileText,
-  Loader, BookOpen, Code, Upload, Download, Printer, Users, Scissors,
+  Loader, BookOpen, Code, Upload, Download, Users, Scissors,
   ListOrdered, Sun, Moon, Sunrise, Sunset, RefreshCw,
-  Bold, Italic, Underline as UnderlineIcon, Heading1, Heading2, Heading3,
-  List, ListOrdered as ListOrderedIcon, Quote, Minus, Link, AlignLeft, AlignCenter, AlignRight,
-  RemoveFormatting, Maximize2, Minimize2
+  Maximize2, Minimize2, Book, BarChart3, Volume2, MessageSquare, History
 } from 'lucide-react';
 
 const DEFAULT_TITLE = 'Untitled Script';
-const EMPTY_CONTENT = '<p>INT. ROOM - DAY</p><p>A desk is covered in papers.</p><p><br></p><p><strong>WRITER</strong></p><p><em>(quietly)</em></p><p>Time to write.</p><p><br></p><p>FADE OUT.</p>';
 
-const MenuButton = ({ onClick, active, children, title }) => (
-  <button type="button" onClick={onClick} title={title}
-    className={`p-1.5 rounded transition-colors ${active ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>
-    {children}
-  </button>
-);
+const EMPTY_CONTENT = `<div data-type="scene-heading">INT. ROOM - DAY</div><div data-type="action">A desk is covered in papers.</div><div data-type="action">&nbsp;</div><div data-type="character">WRITER</div><div data-type="parenthetical">(quietly)</div><div data-type="dialogue">Time to write.</div><div data-type="action">&nbsp;</div><div data-type="transition">FADE OUT.</div>`;
 
-const Divider = () => <div className="w-px h-5 bg-slate-700 mx-1" />;
+function textToScreenplayHtml(text) {
+  const lines = text.split('\n');
+  return lines.map(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return '<div data-type="action">&nbsp;</div>';
+    const type = detectElementType(trimmed);
+    return `<div data-type="${type}">${trimmed}</div>`;
+  }).join('');
+}
+
+function screenplayHtmlToFountain(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  const blocks = div.querySelectorAll('[data-type]');
+  return Array.from(blocks).map(el => {
+    const text = el.textContent.replace(/\u00A0/g, ' ').trim();
+    const type = el.getAttribute('data-type');
+    if (type === 'action' && text === '') return '';
+    if (type === 'scene-heading' && text.startsWith('.')) return text;
+    if (type === 'scene-heading') return text.toUpperCase();
+    if (type === 'character') return text.toUpperCase();
+    return text;
+  }).join('\n\n');
+}
+
+function screenplayHtmlToPlainText(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return Array.from(div.querySelectorAll('[data-type]'))
+    .map(el => el.textContent.replace(/\u00A0/g, ' ').trim())
+    .filter(t => t)
+    .join('\n\n');
+}
+
+const screenStyles = `
+  @page { margin: 0.5in 1in 0.5in 1.5in; size: letter; }
+  body {
+    font-family: 'Courier New', Courier, 'Noto Sans Devanagari', monospace;
+    font-size: 12pt; line-height: 1.5; color: #000;
+    max-width: 6.5in; margin: 0 auto; padding: 0;
+  }
+  [data-type="scene-heading"] {
+    margin: 1em 0 0 0; font-weight: bold; text-transform: uppercase;
+    margin-left: 0; padding-left: 0;
+  }
+  [data-type="action"] {
+    margin: 0 0 0.5em 0; margin-left: 0;
+  }
+  [data-type="character"] {
+    margin: 1em 0 0 0; text-transform: uppercase;
+    margin-left: 2.5in; max-width: 3.5in;
+  }
+  [data-type="parenthetical"] {
+    margin: 0.25em 0; font-style: italic;
+    margin-left: 2in; max-width: 3in;
+  }
+  [data-type="dialogue"] {
+    margin: 0 0 0.25em 0;
+    margin-left: 1.5in; max-width: 3.5in;
+  }
+  [data-type="transition"] {
+    margin: 1em 0; text-transform: uppercase;
+    text-align: right; max-width: 6.5in;
+  }
+  .page-break { page-break-after: always; }
+`;
 
 export default function ScriptEditor() {
   const { currentFilm } = useAuthStore();
@@ -36,6 +101,7 @@ export default function ScriptEditor() {
   const filmId = currentFilm?.id;
   const fileInputRef = useRef(null);
   const previewRef = useRef(null);
+  const autoFormatTimer = useRef(null);
 
   const [scripts, setScripts] = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -52,22 +118,51 @@ export default function ScriptEditor() {
   const [extracting, setExtracting] = useState(false);
   const [splitHeading, setSplitHeading] = useState('');
   const [showSplitInput, setShowSplitInput] = useState(null);
+  const [showTitlePage, setShowTitlePage] = useState(false);
+  const [showReports, setShowReports] = useState(false);
+  const [showReadThrough, setShowReadThrough] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [titlePageData, setTitlePageData] = useState(null);
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+        paragraph: false,
       }),
+      ScreenplayNode,
       Underline,
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      TextAlign.configure({ types: ['heading', 'screenplayNode'] }),
       Placeholder.configure({ placeholder: 'Start writing your script...' }),
       LinkExtension.configure({ openOnClick: false }),
+      CharacterCount,
     ],
     content: '',
-    onUpdate: () => { setDirty(true); },
+    onUpdate: () => {
+      setDirty(true);
+      if (autoFormatTimer.current) clearTimeout(autoFormatTimer.current);
+      autoFormatTimer.current = setTimeout(() => {
+        const { doc, tr } = editor.state;
+        const nodeType = editor.state.schema.nodes.screenplayNode;
+        if (!nodeType) return;
+        let modified = false;
+        doc.descendants((node, pos) => {
+          if (node.type !== nodeType) return;
+          const text = node.textContent;
+          if (!text) return;
+          const detected = detectElementType(text);
+          if (detected !== node.attrs.type) {
+            tr.setNodeMarkup(pos, undefined, { ...node.attrs, type: detected });
+            modified = true;
+          }
+        });
+        if (modified) editor.view.dispatch(tr);
+      }, 400);
+    },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none prose-invert focus:outline-none min-h-[400px] p-4 rounded-xl bg-slate-900 border border-slate-700 focus-within:border-amber-500',
+        class: 'focus:outline-none min-h-[400px] p-6 rounded-xl bg-slate-900 border border-slate-700 focus-within:border-amber-500 screenplay-editor',
       },
     },
   });
@@ -106,8 +201,6 @@ export default function ScriptEditor() {
 
   const contentHtml = editor?.getHTML() || '';
 
-  const activeScript = scripts.find(s => s.id === activeId);
-
   const handleSelect = async (id) => {
     if (dirty) { if (!confirm('You have unsaved changes. Discard them?')) return; }
     setDirty(false); setLoading(true);
@@ -115,7 +208,16 @@ export default function ScriptEditor() {
       const res = await scriptService.show(filmId, id);
       const s = res.data;
       setActiveId(s.id); setTitle(s.title);
-      editor?.commands.setContent(s.content || '');
+      const content = s.content || '';
+      const tpData = extractTitlePage(content);
+      setTitlePageData(tpData);
+      const cleanContent = content.replace(/<!-- TITLE-PAGE -->[\s\S]*?<!-- \/TITLE-PAGE -->/, '');
+      if (cleanContent.includes('data-type')) {
+        editor?.commands.setContent(cleanContent);
+      } else {
+        const converted = textToScreenplayHtml(cleanContent.replace(/<[^>]*>/g, ''));
+        editor?.commands.setContent(converted);
+      }
     } catch { addToast('Failed to load script', 'error'); }
     setLoading(false);
   };
@@ -123,6 +225,7 @@ export default function ScriptEditor() {
   const handleNew = () => {
     if (dirty) { if (!confirm('Discard unsaved changes?')) return; }
     setActiveId(null); setTitle(DEFAULT_TITLE);
+    setTitlePageData(null);
     editor?.commands.setContent(EMPTY_CONTENT);
     setDirty(false);
   };
@@ -131,7 +234,9 @@ export default function ScriptEditor() {
     if (!title.trim()) { addToast('Script needs a title', 'error'); return; }
     setSaving(true);
     try {
-      const data = { title, content: contentHtml };
+      const tpWrapped = titlePageData ? wrapTitlePage(titlePageData) : '';
+      const finalContent = tpWrapped + contentHtml;
+      const data = { title, content: finalContent };
       if (activeId) {
         const res = await scriptService.update(filmId, activeId, data);
         setScripts(prev => prev.map(s => s.id === activeId ? { ...s, ...res.data, updated_at: new Date().toISOString() } : s));
@@ -170,7 +275,7 @@ export default function ScriptEditor() {
         const mammoth = await import('mammoth');
         const buf = await file.arrayBuffer();
         const result = await mammoth.convertToHtml({ arrayBuffer: buf });
-        text = result.value;
+        text = result.value.replace(/<[^>]*>/g, '');
       } else if (ext === 'pdf') {
         const pdfjs = await import('pdfjs-dist');
         pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -193,7 +298,11 @@ export default function ScriptEditor() {
       if (dirty) { if (!confirm('Replace current content with imported text?')) return; }
       const baseName = file.name.replace(/\.[^.]+$/, '');
       setTitle(baseName);
-      editor?.commands.setContent(text.startsWith('<') ? text : text.split('\n').map(l => `<p>${l}</p>`).join(''));
+      if (text.startsWith('<')) {
+        editor?.commands.setContent(text);
+      } else {
+        editor?.commands.setContent(textToScreenplayHtml(text));
+      }
       setActiveId(null);
       setDirty(true);
       addToast(`Imported "${file.name}"`);
@@ -205,8 +314,8 @@ export default function ScriptEditor() {
 
   const handleExportFountain = () => {
     if (!contentHtml && !title) { addToast('Nothing to export', 'error'); return; }
-    const plainText = contentHtml.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\n\s*\n/g, '\n\n').trim();
-    const blob = new Blob([plainText], { type: 'text/plain;charset=utf-8' });
+    const fountain = screenplayHtmlToFountain(contentHtml);
+    const blob = new Blob([fountain], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -218,8 +327,8 @@ export default function ScriptEditor() {
 
   const handleExportTxt = () => {
     if (!contentHtml && !title) { addToast('Nothing to export', 'error'); return; }
-    const plainText = contentHtml.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
-    const blob = new Blob([plainText], { type: 'text/plain;charset=utf-8' });
+    const plain = screenplayHtmlToPlainText(contentHtml);
+    const blob = new Blob([plain], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -232,26 +341,20 @@ export default function ScriptEditor() {
   const handlePrintPdf = () => {
     if (!contentHtml) { addToast('Nothing to print', 'error'); return; }
     const w = window.open('', '_blank');
-    const printContent = contentHtml
-      .replace(/<p>/g, '<p style="margin:0 0 0.5em 0;line-height:1.5;">')
-      .replace(/<h1>/g, '<h1 style="font-size:14pt;font-weight:700;margin:1em 0 0.5em 0;text-transform:uppercase;">')
-      .replace(/<h2>/g, '<h2 style="font-size:12pt;font-weight:700;margin:1em 0 0.5em 0;">')
-      .replace(/<h3>/g, '<h3 style="font-size:11pt;font-weight:600;margin:0.5em 0;">');
+    const tpHtml = titlePageData ? buildTitlePageHtml(titlePageData) : '';
     w.document.write(`<!DOCTYPE html><html><head><title>${title || 'Script'}</title>
-<style>
-  @page { margin: 0.5in; size: letter; }
-  body { font-family: 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.5; color: #000; max-width: 6.5in; margin: 0 auto; }
-  p { margin: 0 0 0.5em 0; line-height: 1.5; }
-  h1, h2, h3 { margin: 1em 0 0.5em 0; }
-  h1 { font-size: 14pt; font-weight: 700; text-transform: uppercase; }
-  blockquote { margin-left: 2em; font-style: italic; }
-  ul, ol { margin: 0.5em 0; padding-left: 2em; }
-</style></head><body>
-${printContent}
+<style>${screenStyles}</style></head><body>
+${tpHtml}
+${contentHtml}
 <p style="margin-top:2em;text-align:center;font-size:10pt;color:#999;">Generated by Nepal Film OS</p>
 </body></html>`);
     w.document.close();
     setTimeout(() => { w.focus(); w.print(); }, 500);
+  };
+
+  const handleTitlePageChange = (data) => {
+    setTitlePageData(data);
+    setDirty(true);
   };
 
   const fetchScenes = async () => {
@@ -318,15 +421,6 @@ ${printContent}
     return Sun;
   };
 
-  const toggleLink = () => {
-    if (!editor) return;
-    const prev = editor.getAttributes('link').href;
-    const url = window.prompt('Link URL', prev || 'https://');
-    if (url === null) return;
-    if (url === '') { editor.chain().focus().unsetLink().run(); return; }
-    editor.chain().focus().setLink({ href: url }).run();
-  };
-
   if (!editor) return null;
 
   return (
@@ -336,6 +430,28 @@ ${printContent}
         <div className="flex items-center gap-1.5">
           {(title || activeId !== null) && (
             <>
+              <button onClick={() => { setShowTitlePage(true); }}
+                className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg transition-all ${
+                  titlePageData ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                }`}>
+                <Book className="h-3.5 w-3.5" /> Title Page
+              </button>
+              <button onClick={() => setShowReports(true)}
+                className="flex items-center gap-1 text-xs px-2.5 py-1.5 bg-slate-800 text-slate-400 rounded-lg hover:text-slate-200 transition-all">
+                <BarChart3 className="h-3.5 w-3.5" /> Reports
+              </button>
+              <button onClick={() => setShowReadThrough(true)}
+                className="flex items-center gap-1 text-xs px-2.5 py-1.5 bg-slate-800 text-slate-400 rounded-lg hover:text-slate-200 transition-all">
+                <Volume2 className="h-3.5 w-3.5" /> Read
+              </button>
+              <button onClick={() => setShowComments(true)}
+                className="flex items-center gap-1 text-xs px-2.5 py-1.5 bg-slate-800 text-slate-400 rounded-lg hover:text-slate-200 transition-all">
+                <MessageSquare className="h-3.5 w-3.5" /> Comments
+              </button>
+              <button onClick={() => setShowHistory(true)}
+                className="flex items-center gap-1 text-xs px-2.5 py-1.5 bg-slate-800 text-slate-400 rounded-lg hover:text-slate-200 transition-all">
+                <History className="h-3.5 w-3.5" /> History
+              </button>
               <button onClick={() => setShowPreview(!showPreview)}
                 className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg transition-all ${
                   showPreview ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-800 text-slate-400 hover:text-slate-200'
@@ -426,34 +542,17 @@ ${printContent}
                 </button>
               </div>
 
-              <div className="flex items-center flex-wrap gap-0.5 mb-1.5 px-1 py-1 bg-slate-900 rounded-lg border border-slate-800">
-                <MenuButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} title="Bold"><Bold className="h-3.5 w-3.5" /></MenuButton>
-                <MenuButton onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} title="Italic"><Italic className="h-3.5 w-3.5" /></MenuButton>
-                <MenuButton onClick={() => editor.chain().focus().toggleUnderline().run()} active={editor.isActive('underline')} title="Underline"><UnderlineIcon className="h-3.5 w-3.5" /></MenuButton>
-                <MenuButton onClick={toggleLink} active={editor.isActive('link')} title="Link"><Link className="h-3.5 w-3.5" /></MenuButton>
-                <Divider />
-                <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} title="Heading 1"><Heading1 className="h-3.5 w-3.5" /></MenuButton>
-                <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} title="Heading 2"><Heading2 className="h-3.5 w-3.5" /></MenuButton>
-                <MenuButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })} title="Heading 3"><Heading3 className="h-3.5 w-3.5" /></MenuButton>
-                <Divider />
-                <MenuButton onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} title="Bullet List"><List className="h-3.5 w-3.5" /></MenuButton>
-                <MenuButton onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} title="Ordered List"><ListOrderedIcon className="h-3.5 w-3.5" /></MenuButton>
-                <MenuButton onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} title="Blockquote"><Quote className="h-3.5 w-3.5" /></MenuButton>
-                <Divider />
-                <MenuButton onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })} title="Align Left"><AlignLeft className="h-3.5 w-3.5" /></MenuButton>
-                <MenuButton onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })} title="Align Center"><AlignCenter className="h-3.5 w-3.5" /></MenuButton>
-                <MenuButton onClick={() => editor.chain().focus().setTextAlign('right').run()} active={editor.isActive({ textAlign: 'right' })} title="Align Right"><AlignRight className="h-3.5 w-3.5" /></MenuButton>
-                <Divider />
-                <MenuButton onClick={() => editor.chain().focus().setHorizontalRule().run()} title="Horizontal Rule"><Minus className="h-3.5 w-3.5" /></MenuButton>
-                <MenuButton onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Clear Formatting"><RemoveFormatting className="h-3.5 w-3.5" /></MenuButton>
-              </div>
+              <ScriptToolbar editor={editor} />
 
-              <div className="flex-1 flex gap-3 min-h-0">
+              <div className="flex-1 flex gap-3 min-h-0 mt-1.5">
                 {!showSource ? (
                   <div className={`flex flex-col ${showPreview ? 'flex-1' : 'flex-1'}`}>
                     <div className="flex items-center justify-between mb-1 shrink-0">
-                      <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Editor</span>
-                      <span className="text-xs text-slate-600">{editor.storage.characterCount?.characters?.() || contentHtml.replace(/<[^>]*>/g, '').length} chars</span>
+                      <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Screenplay</span>
+                      <span className="text-xs text-slate-600">
+                        {editor.storage.characterCount?.characters?.() || screenplayHtmlToPlainText(contentHtml).length} chars
+                        &middot; ~{Math.round((screenplayHtmlToPlainText(contentHtml).split(/\s+/).filter(Boolean).length) / 250) || 1}p
+                      </span>
                     </div>
                     <EditorContent editor={editor} className="flex-1 overflow-y-auto" />
                   </div>
@@ -471,9 +570,9 @@ ${printContent}
                   <div className="w-1/2 flex flex-col border-l border-slate-700 pl-3">
                     <div className="flex items-center justify-between mb-1 shrink-0">
                       <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Preview</span>
-                      <span className="text-xs text-slate-600">Rich text</span>
+                      <span className="text-xs text-slate-600">Screenplay format</span>
                     </div>
-                    <div ref={previewRef} className="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-6 overflow-y-auto prose prose-sm prose-invert max-w-none"
+                    <div ref={previewRef} className="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-6 overflow-y-auto prose prose-sm prose-invert max-w-none screenplay-preview"
                       dangerouslySetInnerHTML={{ __html: contentHtml }} />
                   </div>
                 )}
@@ -541,9 +640,9 @@ ${printContent}
                                   </button>
                                 )}
                                 <button onClick={() => handleDeleteScene(scene.id)} className="p-1 text-slate-500 hover:text-red-400 transition-colors"><Trash2 className="h-3 w-3" /></button>
-                  </div>
-                </div>
-              </div>
+                              </div>
+                            </div>
+                          </div>
                         );
                       })}
                     </div>
@@ -573,6 +672,47 @@ ${printContent}
           )}
         </div>
       </div>
+      {showTitlePage && (
+        <TitlePageEditor
+          data={titlePageData}
+          onChange={handleTitlePageChange}
+          onClose={() => setShowTitlePage(false)}
+        />
+      )}
+      {showReports && (
+        <ScriptReports
+          content={contentHtml}
+          onClose={() => setShowReports(false)}
+        />
+      )}
+      {showReadThrough && (
+        <ReadThrough
+          content={contentHtml}
+          onClose={() => setShowReadThrough(false)}
+        />
+      )}
+      {showComments && (
+        <ScriptComments
+          editor={editor}
+          filmId={filmId}
+          scriptId={activeId}
+          onClose={() => setShowComments(false)}
+        />
+      )}
+      {showHistory && (
+        <ScriptHistory
+          filmId={filmId}
+          scriptId={activeId}
+          currentTitle={title}
+          currentContent={contentHtml}
+          onRestore={(newTitle, newContent) => {
+            setTitle(newTitle);
+            editor?.commands.setContent(newContent);
+            setDirty(false);
+          }}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
     </div>
   );
 }

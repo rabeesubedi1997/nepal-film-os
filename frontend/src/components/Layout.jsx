@@ -53,6 +53,7 @@ export default function Layout() {
     { name: 'Script Breakdown', path: '/app/script-breakdown', icon: FileText, moduleKey: 'script_breakdown', viewPermission: 'script_breakdown.view', tKey: 'nav.script_breakdown' },
     { name: 'Shot List', path: '/app/shot-list', icon: Camera, moduleKey: 'shot_list', viewPermission: 'shot_list.view', tKey: 'nav.shot_list' },
     { name: 'Storyboard', path: '/app/storyboard', icon: Image, moduleKey: 'storyboard', viewPermission: null, tKey: 'nav.storyboard' },
+    { name: 'Beat Sheet', path: '/app/beat-sheets', icon: Layers, moduleKey: 'beats', viewPermission: null, tKey: 'nav.beats' },
     { name: 'Production Calendar', path: '/app/production-calendar', icon: Calendar, moduleKey: 'production_calendar', viewPermission: null, tKey: 'nav.production_calendar' },
     { name: 'Cast & Crew', path: '/app/cast-crew', icon: Users, moduleKey: 'cast_crew', viewPermission: 'cast_crew.view', tKey: 'nav.cast_crew' },
     { name: 'Locations', path: '/app/locations', icon: MapPin, moduleKey: 'locations', viewPermission: 'location.view', tKey: 'nav.locations' },

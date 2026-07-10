@@ -31,6 +31,7 @@ import SeriesView from './views/SeriesView';
 import SuperAdminView from './views/SuperAdminView';
 import ModuleSettings from './views/ModuleSettings';
 import ScriptEditor from './views/ScriptEditor';
+import BeatSheetView from './views/BeatSheetView';
 import ProductionCalendar from './views/ProductionCalendar';
 import StoryboardView from './views/StoryboardView';
 import DayOutOfDaysView from './views/DayOutOfDaysView';
@@ -148,6 +149,7 @@ export default function App() {
           <Route path="scripts" element={<ScriptEditor />} />
           <Route path="production-calendar" element={<ProductionCalendar />} />
           <Route path="storyboard" element={<StoryboardView />} />
+          <Route path="beat-sheets" element={<BeatSheetView />} />
           <Route path="day-out-of-days" element={<DayOutOfDaysView />} />
           <Route path="reports" element={<ReportsHubView />} />
           <Route path="vendors" element={<VendorsView />} />

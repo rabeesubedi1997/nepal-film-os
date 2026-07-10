@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\Location;
 use App\Models\Script;
+use App\Models\ScriptDraft;
+use App\Models\ScriptVersion;
 use App\Models\Scene;
 use App\Services\FountainParser;
 use Illuminate\Http\Request;
@@ -88,6 +90,106 @@ class ScriptController extends Controller
         $script->delete();
 
         return response()->json(['message' => 'Script deleted.']);
+    }
+
+    public function versions(Request $request, $filmId, $id)
+    {
+        $script = Script::where('film_id', $filmId)->findOrFail($id);
+        $versions = ScriptVersion::where('script_id', $script->id)
+            ->with('creator:id,name')
+            ->orderBy('version_number', 'desc')
+            ->get();
+        return response()->json($versions);
+    }
+
+    public function restoreVersion(Request $request, $filmId, $id, $versionId)
+    {
+        $this->requireCan($request, $filmId, 'script.edit');
+        $script = Script::where('film_id', $filmId)->findOrFail($id);
+        $version = ScriptVersion::where('script_id', $script->id)->findOrFail($versionId);
+
+        $script->update([
+            'title' => $version->title,
+            'content' => $version->content,
+        ]);
+
+        broadcast(new ScriptUpdated($script, $request->user(), 'restored'))->toOthers();
+        return response()->json(['message' => 'Script restored from version ' . $version->version_number]);
+    }
+
+    public function createVersion(Request $request, $filmId, $id)
+    {
+        $this->requireCan($request, $filmId, 'script.edit');
+        $script = Script::where('film_id', $filmId)->findOrFail($id);
+
+        $latestVersion = ScriptVersion::where('script_id', $script->id)->max('version_number') ?? 0;
+
+        $version = ScriptVersion::create([
+            'script_id' => $script->id,
+            'film_id' => $filmId,
+            'title' => $script->title,
+            'content' => $script->content,
+            'version_number' => $latestVersion + 1,
+            'description' => $request->input('description'),
+            'created_by' => $request->user()->id,
+        ]);
+
+        $version->load('creator:id,name');
+        return response()->json($version, 201);
+    }
+
+    public function drafts(Request $request, $filmId, $id)
+    {
+        $script = Script::where('film_id', $filmId)->findOrFail($id);
+        $drafts = ScriptDraft::where('script_id', $script->id)
+            ->where('is_archived', false)
+            ->with('creator:id,name')
+            ->orderBy('created_at', 'desc')
+            ->get();
+        return response()->json($drafts);
+    }
+
+    public function storeDraft(Request $request, $filmId, $id)
+    {
+        $this->requireCan($request, $filmId, 'script.edit');
+        $script = Script::where('film_id', $filmId)->findOrFail($id);
+
+        $draft = ScriptDraft::create([
+            'script_id' => $script->id,
+            'film_id' => $filmId,
+            'title' => $request->input('title', $script->title . ' (Draft)'),
+            'content' => $request->input('content', $script->content),
+            'description' => $request->input('description'),
+            'is_archived' => false,
+            'created_by' => $request->user()->id,
+        ]);
+
+        $draft->load('creator:id,name');
+        return response()->json($draft, 201);
+    }
+
+    public function updateDraft(Request $request, $filmId, $id, $draftId)
+    {
+        $this->requireCan($request, $filmId, 'script.edit');
+        $draft = ScriptDraft::where('film_id', $filmId)->where('script_id', $id)->findOrFail($draftId);
+        $draft->update($request->only(['title', 'content', 'description']));
+        return response()->json($draft);
+    }
+
+    public function deleteDraft(Request $request, $filmId, $id, $draftId)
+    {
+        $this->requireCan($request, $filmId, 'script.edit');
+        $draft = ScriptDraft::where('film_id', $filmId)->where('script_id', $id)->findOrFail($draftId);
+        $draft->delete();
+        return response()->json(['message' => 'Draft deleted']);
+    }
+
+    public function archiveDraft(Request $request, $filmId, $id, $draftId)
+    {
+        $this->requireCan($request, $filmId, 'script.edit');
+        $draft = ScriptDraft::where('film_id', $filmId)->where('script_id', $id)->findOrFail($draftId);
+        $draft->update(['is_archived' => true]);
+        return response()->json(['message' => 'Draft archived']);
     }
 
     private function autoExtract(Script $script)

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\Expense;
 use App\Models\Budget;
 use App\Models\FilmUser;
@@ -10,6 +11,7 @@ use Illuminate\Http\Request;
 
 class ExpenseController extends Controller
 {
+    use FilmPermissionTrait;
     /**
      * Get all expenses and department budgets.
      */
@@ -34,6 +36,8 @@ class ExpenseController extends Controller
      */
     public function storeExpense(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'expense.create');
+
         $validated = $request->validate([
             'department_id' => 'required|string',
             'category' => 'required|string',
@@ -47,12 +51,6 @@ class ExpenseController extends Controller
         ]);
 
         $user = $request->user();
-
-        // Check if user belongs to the film
-        $filmUser = FilmUser::where('film_id', $filmId)->where('user_id', $user->id)->first();
-        if (!$filmUser) {
-            return response()->json(['message' => 'Unauthorized.'], 403);
-        }
 
         $expense = Expense::create([
             'film_id' => $filmId,
@@ -119,6 +117,7 @@ class ExpenseController extends Controller
      */
     public function updateExpense(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'expense.edit');
         $expense = Expense::where('film_id', $filmId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -142,6 +141,7 @@ class ExpenseController extends Controller
      */
     public function destroyExpense(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'expense.delete');
         $expense = Expense::where('film_id', $filmId)->findOrFail($id);
         $expense->delete();
 
@@ -153,6 +153,7 @@ class ExpenseController extends Controller
      */
     public function destroyBudget(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'budget.manage');
         $budget = Budget::where('film_id', $filmId)->findOrFail($id);
         $budget->delete();
 

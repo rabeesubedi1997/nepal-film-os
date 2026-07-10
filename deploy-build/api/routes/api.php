@@ -33,6 +33,8 @@ use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\FeatureController;
 use App\Http\Controllers\Api\InvitationController;
+use App\Http\Controllers\Api\BeatSheetController;
+use App\Http\Controllers\Api\ScriptCommentController;
 
 // Public Auth routes (rate limited to prevent brute force)
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:3,60');
@@ -288,6 +290,18 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/films/{film}/scripts/{id}', [ScriptController::class, 'update']);
             Route::delete('/films/{film}/scripts/{id}', [ScriptController::class, 'destroy']);
 
+            // Script Versions
+            Route::get('/films/{film}/scripts/{script}/versions', [ScriptController::class, 'versions']);
+            Route::post('/films/{film}/scripts/{script}/versions', [ScriptController::class, 'createVersion']);
+            Route::post('/films/{film}/scripts/{script}/versions/{version}/restore', [ScriptController::class, 'restoreVersion']);
+
+            // Script Drafts
+            Route::get('/films/{film}/scripts/{script}/drafts', [ScriptController::class, 'drafts']);
+            Route::post('/films/{film}/scripts/{script}/drafts', [ScriptController::class, 'storeDraft']);
+            Route::put('/films/{film}/scripts/{script}/drafts/{draft}', [ScriptController::class, 'updateDraft']);
+            Route::delete('/films/{film}/scripts/{script}/drafts/{draft}', [ScriptController::class, 'deleteDraft']);
+            Route::post('/films/{film}/scripts/{script}/drafts/{draft}/archive', [ScriptController::class, 'archiveDraft']);
+
             // Scene extraction & splitting
             Route::post('/films/{film}/scripts/{id}/extract-scenes', [SceneController::class, 'autoExtract']);
             Route::get('/films/{film}/scenes', [SceneController::class, 'index']);
@@ -297,6 +311,15 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/films/{film}/scenes/{id}', [SceneController::class, 'destroy']);
             Route::post('/films/{film}/scenes/{id}/split', [SceneController::class, 'splitScene']);
             Route::post('/films/{film}/scenes/reorder', [SceneController::class, 'reorder']);
+
+            // Script Comments
+            Route::get('/films/{film}/scripts/{script}/comments', [ScriptCommentController::class, 'index']);
+            Route::get('/films/{film}/scripts/{script}/comments/{id}', [ScriptCommentController::class, 'show']);
+            Route::post('/films/{film}/scripts/{script}/comments', [ScriptCommentController::class, 'store']);
+            Route::put('/films/{film}/scripts/{script}/comments/{id}', [ScriptCommentController::class, 'update']);
+            Route::delete('/films/{film}/scripts/{script}/comments/{id}', [ScriptCommentController::class, 'destroy']);
+            Route::post('/films/{film}/scripts/{script}/comments/{id}/resolve', [ScriptCommentController::class, 'resolve']);
+            Route::post('/films/{film}/scripts/{script}/comments/{id}/reopen', [ScriptCommentController::class, 'reopen']);
         });
 
         // 17. Vendors Module
@@ -318,6 +341,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/films/{film}/roles/{roleId}', [RoleController::class, 'show']);
         Route::put('/films/{film}/roles/{roleId}', [RoleController::class, 'update']);
         Route::delete('/films/{film}/roles/{roleId}', [RoleController::class, 'destroy']);
+
+        // 18. Beat Sheet Module
+        Route::middleware('film.module:beats')->group(function () {
+            Route::get('/films/{film}/beat-sheets', [BeatSheetController::class, 'index']);
+            Route::get('/films/{film}/beat-sheets/{id}', [BeatSheetController::class, 'show']);
+            Route::post('/films/{film}/beat-sheets', [BeatSheetController::class, 'store']);
+            Route::put('/films/{film}/beat-sheets/{id}', [BeatSheetController::class, 'update']);
+            Route::delete('/films/{film}/beat-sheets/{id}', [BeatSheetController::class, 'destroy']);
+            Route::post('/films/{film}/beat-sheets/{beatSheetId}/beats', [BeatSheetController::class, 'storeBeat']);
+            Route::put('/films/{film}/beat-sheets/{beatSheetId}/beats/{beatId}', [BeatSheetController::class, 'updateBeat']);
+            Route::delete('/films/{film}/beat-sheets/{beatSheetId}/beats/{beatId}', [BeatSheetController::class, 'destroyBeat']);
+            Route::post('/films/{film}/beat-sheets/{beatSheetId}/beats/reorder', [BeatSheetController::class, 'reorderBeats']);
+        });
     });
 
     // Available permissions reference (no film access needed)

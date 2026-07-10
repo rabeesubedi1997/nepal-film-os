@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\ProgressUpdate;
 use App\Models\Scene;
 use App\Models\Schedule;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class ProgressController extends Controller
 {
+    use FilmPermissionTrait;
     /**
      * Get all progress updates for a film.
      */
@@ -29,6 +31,7 @@ class ProgressController extends Controller
      */
     public function update(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'progress.edit');
         $update = ProgressUpdate::where('film_id', $filmId)->findOrFail($id);
 
         $validated = $request->validate([
@@ -51,6 +54,7 @@ class ProgressController extends Controller
      */
     public function destroy(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'progress.delete');
         $update = ProgressUpdate::where('film_id', $filmId)->findOrFail($id);
         $update->delete();
 
@@ -62,6 +66,7 @@ class ProgressController extends Controller
      */
     public function store(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'progress.create');
         $validated = $request->validate([
             'scene_id' => 'required|integer|exists:scenes,id',
             'schedule_id' => 'required|integer|exists:schedules,id',

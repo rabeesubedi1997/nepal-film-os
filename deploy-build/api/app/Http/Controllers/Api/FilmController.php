@@ -168,27 +168,10 @@ class FilmController extends Controller
 
             // Enable default modules
             $defaultModules = [
-                'schedule',
-                'cast_crew',
-                'expenses',
-                'call_sheet',
-                'progress',
-                'locations',
-                'script',
-                'script_breakdown',
-                'shot_list',
-                'tasks',
-                'timesheets',
-                'dpr',
-                'documents',
-                'messaging',
-                'wardrobe',
-                'continuity',
-                'storyboard',
-                'production_calendar',
-                'day_out_of_days',
-                'reports',
-                'analytics',
+                'schedule', 'cast_crew', 'expenses', 'call_sheet', 'progress', 'locations',
+                'script', 'script_breakdown', 'shot_list', 'tasks', 'timesheets', 'dpr', 'documents',
+                'messaging', 'wardrobe', 'continuity', 'storyboard', 'production_calendar',
+                'day_out_of_days', 'reports', 'analytics',
             ];
             foreach ($defaultModules as $module) {
                 FilmModule::create([

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Traits\FilmPermissionTrait;
 use App\Models\Schedule;
 use App\Models\Scene;
 use App\Models\Location;
@@ -11,6 +12,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class ScheduleController extends Controller
 {
+    use FilmPermissionTrait;
     /**
      * Get schedules, scenes, and locations for a film.
      */
@@ -41,6 +43,7 @@ class ScheduleController extends Controller
      */
     public function storeSchedule(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'schedule.create');
         $validated = $request->validate([
             'day_number' => 'required|integer',
             'shoot_date' => 'required|date',
@@ -70,6 +73,7 @@ class ScheduleController extends Controller
      */
     public function storeScene(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'scene.create');
         $validated = $request->validate([
             'scene_number' => 'required|string',
             'scene_heading' => 'required|string',
@@ -104,6 +108,7 @@ class ScheduleController extends Controller
      */
     public function updateScene(Request $request, $filmId, $sceneId)
     {
+        $this->requireCan($request, $filmId, 'scene.edit');
         $scene = Scene::where('film_id', $filmId)->findOrFail($sceneId);
 
         $validated = $request->validate([
@@ -128,6 +133,7 @@ class ScheduleController extends Controller
      */
     public function addSceneToSchedule(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'schedule.edit');
         $validated = $request->validate([
             'schedule_id' => 'required|integer|exists:schedules,id',
             'scene_ids' => 'required|array',
@@ -155,6 +161,7 @@ class ScheduleController extends Controller
      */
     public function updateSchedule(Request $request, $filmId, $scheduleId)
     {
+        $this->requireCan($request, $filmId, 'schedule.edit');
         $schedule = Schedule::where('film_id', $filmId)->findOrFail($scheduleId);
 
         $validated = $request->validate([
@@ -177,6 +184,7 @@ class ScheduleController extends Controller
      */
     public function destroySchedule(Request $request, $filmId, $scheduleId)
     {
+        $this->requireCan($request, $filmId, 'schedule.delete');
         $schedule = Schedule::where('film_id', $filmId)->findOrFail($scheduleId);
         $schedule->delete();
 
@@ -188,6 +196,7 @@ class ScheduleController extends Controller
      */
     public function destroyScene(Request $request, $filmId, $sceneId)
     {
+        $this->requireCan($request, $filmId, 'scene.delete');
         $scene = Scene::where('film_id', $filmId)->findOrFail($sceneId);
         $scene->delete();
 
