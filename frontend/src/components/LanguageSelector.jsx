@@ -1,9 +1,9 @@
 import { useLanguageStore } from '../languageStore';
 
 const LANGUAGES = [
-  { code: 'en', label: 'English', flag: '🇬🇧', font: 'inherit' },
-  { code: 'ne', label: 'नेपाली', flag: '🇳🇵', font: '"Noto Sans Devanagari", sans-serif' },
-  { code: 'hi', label: 'हिन्दी', flag: '🇮🇳', font: '"Noto Sans Devanagari", sans-serif' },
+  { code: 'en', label: 'English (EN)', font: 'inherit' },
+  { code: 'ne', label: 'Nepali (NE) - ', font: '"Noto Sans Devanagari", sans-serif' },
+  { code: 'hi', label: 'Hindi (HI) - ', font: '"Noto Sans Devanagari", sans-serif' },
 ];
 
 export default function LanguageSelector({ editor }) {
@@ -31,7 +31,7 @@ export default function LanguageSelector({ editor }) {
     >
       {LANGUAGES.map((l) => (
         <option key={l.code} value={l.code}>
-          {l.flag} {l.label}
+          {l.label}
         </option>
       ))}
     </select>

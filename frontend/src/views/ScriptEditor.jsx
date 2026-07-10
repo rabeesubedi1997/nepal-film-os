@@ -141,6 +141,7 @@ export default function ScriptEditor() {
     extensions: [
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
+        paragraph: false,
       }),
       ScreenplayNode,
       Underline,
