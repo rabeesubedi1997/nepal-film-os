@@ -1,5 +1,4 @@
-import { Node, mergeAttributes } from '@tiptap/core';
-import { TextStyle } from '@tiptap/extension-text-style';
+import Paragraph from '@tiptap/extension-paragraph';
 
 export const ELEMENT_TYPES = [
   'scene-heading',
@@ -21,23 +20,15 @@ const SHOT_PATTERN = /^(CLOSE ON|CLOSE UP|CLOSEUP|WIDE SHOT|WIDE|MEDIUM SHOT|MED
 export function detectElementType(text) {
   const trimmed = text.trim();
   if (!trimmed) return 'action';
-  
   if (SCENE_HEADING_PATTERN.test(trimmed)) return 'scene-heading';
   if (TRANSITION_PATTERN.test(trimmed)) return 'transition';
   if (SHOT_PATTERN.test(trimmed)) return 'shot';
   if (PARENTHETICAL_PATTERN.test(trimmed)) return 'parenthetical';
   if (CHARACTER_PATTERN.test(trimmed) && trimmed.length < 40 && !trimmed.includes('  ')) return 'character';
-  
   return 'action';
 }
 
-export const ScreenplayNode = Node.create({
-  name: 'screenplay',
-  group: 'block',
-  content: 'inline*',
-  defining: true,
-  draggable: true,
-
+export const ScreenplayNode = Paragraph.extend({
   addAttributes() {
     return {
       elementType: {
@@ -58,7 +49,7 @@ export const ScreenplayNode = Node.create({
 
   parseHTML() {
     return [
-      { tag: 'p[data-element-type]' },
+      ...this.parent?.(),
       { tag: 'div[data-element-type]' },
       { tag: 'div[data-type]' },
       { tag: 'p[data-type]' },
@@ -67,15 +58,11 @@ export const ScreenplayNode = Node.create({
 
   renderHTML({ node, HTMLAttributes }) {
     const type = node.attrs.elementType;
-    const tag = type === 'dialogue' || type === 'parenthetical' ? 'p' : 'p';
-    return [
-      tag,
-      mergeAttributes(HTMLAttributes, {
-        class: `screenplay-element screenplay-${type}`,
-        'data-element-type': type,
-      }),
-      0,
-    ];
+    return ['p', {
+      ...HTMLAttributes,
+      class: `screenplay-element screenplay-${type}`,
+      'data-element-type': type,
+    }, 0];
   },
 
   addCommands() {
@@ -84,17 +71,15 @@ export const ScreenplayNode = Node.create({
         if (!ELEMENT_TYPES.includes(elementType)) return false;
         const { selection } = editor.state;
         const { $from } = selection;
-        
         for (let depth = $from.depth; depth > 0; depth--) {
           const node = $from.node(depth);
-          if (node.type.name === 'screenplay') {
+          if (node.type.name === 'paragraph') {
             const pos = $from.before(depth);
             return commands.setNodeMarkup(pos, undefined, { ...node.attrs, elementType });
           }
         }
-        
         return commands.insertContent({
-          type: 'screenplay',
+          type: 'paragraph',
           attrs: { elementType },
           content: [{ type: 'text', text: '\u00A0' }],
         });
@@ -115,44 +100,11 @@ export const ScreenplayNode = Node.create({
 
   addInputRules() {
     return [
-      {
-        find: /^INT\.?\s/,
-        type: this.type,
-        getAttributes: () => ({ elementType: 'scene-heading' }),
-      },
-      {
-        find: /^EXT\.?\s/,
-        type: this.type,
-        getAttributes: () => ({ elementType: 'scene-heading' }),
-      },
-      {
-        find: /^CUT TO:?$/i,
-        type: this.type,
-        getAttributes: () => ({ elementType: 'transition' }),
-      },
-      {
-        find: /^FADE (IN|OUT):?$/i,
-        type: this.type,
-        getAttributes: () => ({ elementType: 'transition' }),
-      },
-      {
-        find: /^\(.+\)$/,
-        type: this.type,
-        getAttributes: () => ({ elementType: 'parenthetical' }),
-      },
+      { find: /^INT\.?\s/, type: this.type, getAttributes: () => ({ elementType: 'scene-heading' }) },
+      { find: /^EXT\.?\s/, type: this.type, getAttributes: () => ({ elementType: 'scene-heading' }) },
+      { find: /^CUT TO:?$/i, type: this.type, getAttributes: () => ({ elementType: 'transition' }) },
+      { find: /^FADE (IN|OUT):?$/i, type: this.type, getAttributes: () => ({ elementType: 'transition' }) },
+      { find: /^\(.+\)$/, type: this.type, getAttributes: () => ({ elementType: 'parenthetical' }) },
     ];
-  },
-});
-
-export const ScreenplayTextStyle = TextStyle.extend({
-  addCommands() {
-    return {
-      setFontSize: (size) => ({ commands }) => {
-        return commands.setMark('textStyle', { fontSize: `${size}pt` });
-      },
-      setFontFamily: (family) => ({ commands }) => {
-        return commands.setMark('textStyle', { fontFamily: family });
-      },
-    };
   },
 });
