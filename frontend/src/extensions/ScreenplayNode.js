@@ -32,7 +32,7 @@ export function detectElementType(text) {
 }
 
 export const ScreenplayNode = Node.create({
-  name: 'paragraph',
+  name: 'screenplay',
   group: 'block',
   content: 'inline*',
   defining: true,
@@ -87,14 +87,14 @@ export const ScreenplayNode = Node.create({
         
         for (let depth = $from.depth; depth > 0; depth--) {
           const node = $from.node(depth);
-          if (node.type.name === 'paragraph') {
+          if (node.type.name === 'screenplay') {
             const pos = $from.before(depth);
             return commands.setNodeMarkup(pos, undefined, { ...node.attrs, elementType });
           }
         }
         
         return commands.insertContent({
-          type: 'paragraph',
+          type: 'screenplay',
           attrs: { elementType },
           content: [{ type: 'text', text: '\u00A0' }],
         });

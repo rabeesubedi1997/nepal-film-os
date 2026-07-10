@@ -145,13 +145,13 @@ export default function ScriptEditor() {
       }),
       ScreenplayNode,
       Underline,
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      TextAlign.configure({ types: ['heading', 'screenplay'] }),
       Placeholder.configure({ placeholder: 'Start writing your script...' }),
       LinkExtension.configure({ openOnClick: false }),
       CharacterCount,
       TextStyle,
       FontFamily.configure({
-        types: ['paragraph', 'heading'],
+        types: ['screenplay', 'heading'],
       }),
     ],
     content: '',
@@ -160,7 +160,7 @@ export default function ScriptEditor() {
       if (autoFormatTimer.current) clearTimeout(autoFormatTimer.current);
       autoFormatTimer.current = setTimeout(() => {
         const { doc, tr } = editor.state;
-        const nodeType = editor.state.schema.nodes.paragraph;
+        const nodeType = editor.state.schema.nodes.screenplay;
         if (!nodeType) return;
         let modified = false;
         doc.descendants((node, pos) => {

@@ -77,8 +77,8 @@ const FontSelector = ({ editor }) => {
 export default function ScriptToolbar({ editor }) {
   if (!editor) return null;
 
-  const currentType = editor.getAttributes('paragraph').elementType || 'action';
-  const isScreenplay = editor.isActive('paragraph');
+  const currentType = editor.getAttributes('screenplay').elementType || 'action';
+  const isScreenplay = editor.isActive('screenplay');
 
   const setType = (type) => {
     editor.chain().focus().setScreenplayElement(type).run();
