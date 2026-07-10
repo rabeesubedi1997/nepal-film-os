@@ -27,15 +27,21 @@ const typeLabels = {
 
 const FONT_FAMILIES = [
   { value: 'inherit', label: 'Default (Screenplay)' },
-  { value: '"Noto Sans Devanagari", sans-serif', label: 'Noto Sans Devanagari (Nepali/Hindi)' },
-  { value: '"Noto Sans", sans-serif', label: 'Noto Sans (Multi-script)' },
   { value: '"Courier Prime", "Courier New", monospace', label: 'Courier Prime (Screenplay)' },
   { value: '"Courier New", Courier, monospace', label: 'Courier New' },
+  { value: '"Noto Sans Devanagari", "Mangal", "Nirmala UI", sans-serif', label: 'Noto Sans Devanagari (Nepali/Hindi)' },
+  { value: '"Tiro Devanagari Sanskrit", "Kokila", serif', label: 'Tiro Devanagari (Nepali/Hindi)' },
+  { value: '"Noto Sans", sans-serif', label: 'Noto Sans (Multi-script)' },
   { value: 'Arial, "Helvetica Neue", Helvetica, sans-serif', label: 'Arial' },
   { value: '"Times New Roman", Times, serif', label: 'Times New Roman' },
   { value: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif', label: 'Segoe UI' },
   { value: 'Georgia, serif', label: 'Georgia' },
-  { value: '"Microsoft YaHei", "PingFang SC", sans-serif', label: 'Chinese/Japanese' },
+  { value: 'Verdana, Geneva, sans-serif', label: 'Verdana' },
+  { value: 'Tahoma, "Segoe UI", Geneva, sans-serif', label: 'Tahoma' },
+  { value: 'Calibri, "Segoe UI", sans-serif', label: 'Calibri' },
+  { value: 'Cambria, "Times New Roman", Times, serif', label: 'Cambria' },
+  { value: '"Noto Serif Devanagari", serif', label: 'Noto Serif Devanagari (Nepali/Hindi)' },
+  { value: '"Mukta", sans-serif', label: 'Mukta (Nepali/Hindi)' },
 ];
 
 const MenuButton = ({ onClick, active, children, title }) => (
@@ -48,14 +54,10 @@ const MenuButton = ({ onClick, active, children, title }) => (
 const Divider = () => <div className="w-px h-5 bg-slate-700 mx-1" />;
 
 const FontSelector = ({ editor }) => {
-  const currentFont = editor.getAttributes('textStyle').fontFamily || 'inherit';
+  const currentFont = editor.getAttributes('paragraph').fontFamily || 'inherit';
   const handleChange = (e) => {
     const font = e.target.value;
-    if (font === 'inherit') {
-      editor.chain().focus().unsetFontFamily().run();
-    } else {
-      editor.chain().focus().setFontFamily(font).run();
-    }
+    editor.chain().focus().setDocumentFontFamily(font === 'inherit' ? null : font).run();
   };
   
   return (

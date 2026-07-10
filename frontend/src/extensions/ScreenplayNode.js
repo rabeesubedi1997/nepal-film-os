@@ -45,6 +45,11 @@ export const ScreenplayNode = Paragraph.extend({
         parseHTML: element => element.getAttribute('data-scene-number') || null,
         renderHTML: attributes => attributes.sceneNumber ? { 'data-scene-number': attributes.sceneNumber } : {},
       },
+      fontFamily: {
+        default: null,
+        parseHTML: element => element.style.fontFamily.replace(/['"]+/g, '').trim() || null,
+        renderHTML: () => ({}),
+      },
     };
   },
 
@@ -59,11 +64,13 @@ export const ScreenplayNode = Paragraph.extend({
 
   renderHTML({ node, HTMLAttributes }) {
     const type = node.attrs.elementType;
+    const style = node.attrs.fontFamily ? `font-family: ${node.attrs.fontFamily}` : '';
     return ['p', {
       ...HTMLAttributes,
       class: `screenplay-element screenplay-${type}`,
       'data-element-type': type,
       'data-type': type,
+      ...(style ? { style } : {}),
     }, 0];
   },
 
@@ -85,6 +92,17 @@ export const ScreenplayNode = Paragraph.extend({
           attrs: { elementType },
           content: [{ type: 'text', text: '\u00A0' }],
         });
+      },
+      setDocumentFontFamily: (fontFamily) => ({ tr, state }) => {
+        const { doc } = state;
+        const nodeType = state.schema.nodes.paragraph;
+        let modified = false;
+        doc.descendants((node, pos) => {
+          if (node.type !== nodeType) return;
+          tr.setNodeMarkup(pos, undefined, { ...node.attrs, fontFamily });
+          modified = true;
+        });
+        return modified;
       },
     };
   },

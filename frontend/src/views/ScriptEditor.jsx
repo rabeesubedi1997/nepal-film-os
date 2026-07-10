@@ -6,8 +6,6 @@ import TextAlign from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
 import LinkExtension from '@tiptap/extension-link';
 import CharacterCount from '@tiptap/extension-character-count';
-import { TextStyle } from '@tiptap/extension-text-style';
-import { FontFamily } from '@tiptap/extension-font-family';
 import { ScreenplayNode, detectElementType } from '../extensions';
 import ScriptToolbar, { FontSelector } from '../components/ScriptToolbar';
 import LanguageSelector from '../components/LanguageSelector';
@@ -148,10 +146,6 @@ export default function ScriptEditor() {
       Placeholder.configure({ placeholder: 'Start writing your script...' }),
       LinkExtension.configure({ openOnClick: false }),
       CharacterCount,
-      TextStyle,
-      FontFamily.configure({
-        types: ['paragraph', 'heading'],
-      }),
     ],
     content: '',
     onUpdate: () => {
