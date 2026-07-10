@@ -8,8 +8,9 @@ import LinkExtension from '@tiptap/extension-link';
 import CharacterCount from '@tiptap/extension-character-count';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { FontFamily } from '@tiptap/extension-font-family';
-import { ScreenplayNode, detectElementType, ELEMENT_TYPES } from '../extensions';
+import { ScreenplayNode, detectElementType } from '../extensions';
 import ScriptToolbar from '../components/ScriptToolbar';
+import LanguageSelector from '../components/LanguageSelector';
 import TitlePageEditor, { extractTitlePage, wrapTitlePage, buildTitlePageHtml } from '../components/TitlePageEditor';
 import ScriptReports from '../components/ScriptReports';
 import ReadThrough from '../components/ReadThrough';
@@ -22,52 +23,17 @@ import echo from '../echo';
 import { useLanguageStore } from '../languageStore';
 import {
   Plus, Eye, Trash2, Save, FileText,
-  Loader, BookOpen, Code, Upload, Download, Users, Scissors,
+  Loader, BookOpen, Code, Upload, Download as DownloadIcon, Users, Scissors,
   ListOrdered, Sun, Moon, Sunrise, Sunset, RefreshCw,
-  Maximize2, Minimize2, Book, BarChart3, Volume2, MessageSquare, History,
-  ChevronLeft, ChevronRight, MoreHorizontal, Search, Filter,
-  Layout, Type, AlignLeft, AlignCenter, AlignJustify,
-  Paperclip, Flag, Bell, Settings, ZoomIn, ZoomOut,
-  Copy, FilePlus, FileMinus, Image, Video, Music,
-  ChevronDown, ChevronUp
+  BarChart3, Volume2, MessageSquare, History,
+  ChevronLeft, ChevronRight, Search,
+  ZoomIn, ZoomOut,
+  FilePlus, ChevronUp
 } from 'lucide-react';
 
 const DEFAULT_TITLE = 'Untitled Script';
 
 const EMPTY_CONTENT = `<div data-type="scene-heading">INT. ROOM - DAY</div><div data-type="action">A desk is covered in papers.</div><div data-type="action">&nbsp;</div><div data-type="character">WRITER</div><div data-type="parenthetical">(quietly)</div><div data-type="dialogue">Time to write.</div><div data-type="action">&nbsp;</div><div data-type="transition">FADE OUT.</div>`;
-
-const LanguageSelector = ({ editor }) => {
-  const { language, setLanguage } = useLanguageStore();
-  const LANGUAGES = [
-    { code: 'en', label: 'English', font: 'inherit' },
-    { code: 'ne', label: 'नेपाली', font: '"Noto Sans Devanagari", sans-serif' },
-    { code: 'hi', label: 'हिन्दी', font: '"Noto Sans Devanagari", sans-serif' },
-  ];
-  const handleChange = (e) => {
-    const lang = e.target.value;
-    setLanguage(lang);
-    if (editor) {
-      const selected = LANGUAGES.find(l => l.code === lang);
-      if (selected && selected.font !== 'inherit') {
-        editor.chain().focus().setFontFamily(selected.font).run();
-      } else if (selected && selected.font === 'inherit') {
-        editor.chain().focus().unsetFontFamily().run();
-      }
-    }
-  };
-  return (
-    <select
-      value={language}
-      onChange={handleChange}
-      className="bg-slate-800 border border-slate-700 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 cursor-pointer min-w-[120px]"
-      title="Document Language (auto-selects font)"
-    >
-      {LANGUAGES.map((l) => (
-        <option key={l.code} value={l.code}>{l.label}</option>
-      ))}
-    </select>
-  );
-};
 
 function textToScreenplayHtml(text) {
   const lines = text.split('\n');
@@ -110,26 +76,26 @@ const screenStyles = `
     font-size: 12pt; line-height: 1.5; color: #000;
     max-width: 6.5in; margin: 0 auto; padding: 0;
   }
-  [data-type="scene-heading"] {
+  [data-element-type="scene-heading"], [data-type="scene-heading"] {
     margin: 1em 0 0 0; font-weight: bold; text-transform: uppercase;
     margin-left: 0; padding-left: 0;
   }
-  [data-type="action"] {
+  [data-element-type="action"], [data-type="action"] {
     margin: 0 0 0.5em 0; margin-left: 0;
   }
-  [data-type="character"] {
+  [data-element-type="character"], [data-type="character"] {
     margin: 1em 0 0 0; text-transform: uppercase;
     margin-left: 2.5in; max-width: 3.5in;
   }
-  [data-type="parenthetical"] {
+  [data-element-type="parenthetical"], [data-type="parenthetical"] {
     margin: 0.25em 0; font-style: italic;
     margin-left: 2in; max-width: 3in;
   }
-  [data-type="dialogue"] {
+  [data-element-type="dialogue"], [data-type="dialogue"] {
     margin: 0 0 0.25em 0;
     margin-left: 1.5in; max-width: 3.5in;
   }
-  [data-type="transition"] {
+  [data-element-type="transition"], [data-type="transition"] {
     margin: 1em 0; text-transform: uppercase;
     text-align: right; max-width: 6.5in;
   }
@@ -201,8 +167,8 @@ export default function ScriptEditor() {
           const text = node.textContent;
           if (!text) return;
           const detected = detectElementType(text);
-          if (detected !== node.attrs.type) {
-            tr.setNodeMarkup(pos, undefined, { ...node.attrs, type: detected });
+          if (detected !== node.attrs.elementType) {
+            tr.setNodeMarkup(pos, undefined, { ...node.attrs, elementType: detected });
             modified = true;
           }
         });
@@ -362,16 +328,32 @@ export default function ScriptEditor() {
   function convertHtmlToScreenplay(html) {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const blocks = [];
-    doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6, div').forEach(el => {
+    doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6, div, li').forEach(el => {
       const text = el.textContent.trim();
       if (!text) return;
       const type = detectElementType(text);
-      const innerHtml = el.innerHTML.trim();
-      if (innerHtml && innerHtml !== text) {
-        blocks.push(`<div data-type="${type}">${innerHtml}</div>`);
-      } else {
-        blocks.push(`<div data-type="${type}">${text}</div>`);
-      }
+      let inner = el.innerHTML.trim();
+      inner = inner
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/?(span|font|b|strong|i|em|u|ins|s|del|mark|sub|sup|a|code)[^>]*>/gi, (match) => {
+          const tag = match.match(/<\/?([a-z]+)/i)?.[1]?.toLowerCase();
+          if (!tag) return match;
+          if (match.startsWith('</')) return match;
+          const allowed = ['b', 'strong', 'i', 'em', 'u', 'ins', 's', 'del', 'mark', 'sub', 'sup', 'a', 'code', 'span'];
+          if (!allowed.includes(tag)) return '';
+          if (tag === 'span' || tag === 'font') {
+            const style = match.match(/style="([^"]*)"/i)?.[1] || '';
+            const color = style.match(/color\s*:\s*([^;]+)/i)?.[1];
+            const fontSize = style.match(/font-size\s*:\s*([^;]+)/i)?.[1];
+            if (color || fontSize) return match;
+            return '';
+          }
+          return match;
+        })
+        .replace(/<a\s[^>]*href="([^"]*)"[^>]*>/gi, '<a href="$1">')
+        .replace(/<a\s[^>]*>/gi, '<a>')
+        .replace(/<\/?div[^>]*>/gi, '');
+      blocks.push(`<div data-type="${type}">${inner || '&nbsp;'}</div>`);
     });
     return blocks.join('');
   }
@@ -430,6 +412,30 @@ export default function ScriptEditor() {
     w.document.write(`<!DOCTYPE html><html><head><title>${title || 'Script'}</title><style>${screenStyles}</style></head><body>${tpHtml}${contentHtml}<p style="margin-top:2em;text-align:center;font-size:10pt;color:#999;">Generated by Nepal Film OS</p></body></html>`);
     w.document.close();
     setTimeout(() => { w.focus(); w.print(); }, 500);
+  };
+
+  const handleServerExport = async (format) => {
+    if (!activeId || !filmId) { addToast('Save the script first', 'error'); return; }
+    try {
+      const res = await scriptService.show(filmId, activeId);
+      const script = res.data;
+      const content = script.content || '';
+      const tpWrapped = titlePageData ? wrapTitlePage(titlePageData) : '';
+      const response = await fetch(`/api/films/${filmId}/scripts/${activeId}/export/${format}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' },
+        body: JSON.stringify({ html: tpWrapped + content, title: script.title || 'Screenplay' }),
+      });
+      if (!response.ok) throw new Error('Export failed');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${script.title || 'screenplay'}.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+      addToast(`Exported as .${format}`);
+    } catch { addToast(`Server export failed`, 'error'); }
   };
 
   const handleTitlePageChange = (data) => {
@@ -505,8 +511,6 @@ export default function ScriptEditor() {
 
   if (!editor) return null;
 
-  const elementTypeKeys = Object.keys(ELEMENT_TYPES);
-
   return (
     <div className="flex flex-col h-screen bg-slate-950 text-slate-100">
       {/* Top Toolbar */}
@@ -558,13 +562,27 @@ export default function ScriptEditor() {
             </select>
             <ZoomIn className="h-3.5 w-3.5 text-slate-500" />
           </div>
-          <LanguageSelector />
-          <button onClick={() => setShowPreview(!showPreview)} className={`p-1.5 rounded transition ${showPreview ? 'bg-amber-500/10 text-amber-400' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'}`} title="Preview">
-            <Eye className="h-4 w-4" />
-          </button>
-          <button onClick={() => setShowSource(!showSource)} className={`p-1.5 rounded transition ${showSource ? 'bg-amber-500/10 text-amber-400' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'}`} title="Source">
-            <Code className="h-4 w-4" />
-          </button>
+          <LanguageSelector editor={editor} />
+          <div className="flex items-center gap-1">
+            <button onClick={() => setShowPreview(!showPreview)} className={`p-1.5 rounded transition ${showPreview ? 'bg-amber-500/10 text-amber-400' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'}`} title="Preview">
+              <Eye className="h-4 w-4" />
+            </button>
+            <button onClick={() => setShowSource(!showSource)} className={`p-1.5 rounded transition ${showSource ? 'bg-amber-500/10 text-amber-400' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'}`} title="Source">
+              <Code className="h-4 w-4" />
+            </button>
+            {activeId && (
+              <div className="relative group">
+                <button className="p-1.5 rounded text-slate-400 hover:text-slate-100 hover:bg-slate-800" title="Server Export">
+                  <DownloadIcon className="h-4 w-4" />
+                </button>
+                <div className="absolute right-0 top-full mt-1 w-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                  <button onClick={() => handleServerExport('pdf')} className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700 first:rounded-t-lg">Export PDF</button>
+                  <button onClick={() => handleServerExport('docx')} className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700">Export DOCX</button>
+                  <button onClick={() => handleServerExport('fountain')} className="w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-700 last:rounded-b-lg">Export Fountain</button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
