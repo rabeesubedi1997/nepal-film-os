@@ -3,9 +3,7 @@ import {
   ArrowRight,
   Bold, Italic, Underline as UnderlineIcon, Link,
   Minus, RemoveFormatting, List, ListOrdered as ListOrderedIcon,
-  Globe,
 } from 'lucide-react';
-import { useLanguageStore } from '../languageStore';
 import { ELEMENT_TYPES } from '../extensions';
 
 const typeIcons = {
@@ -34,30 +32,6 @@ const MenuButton = ({ onClick, active, children, title }) => (
 );
 
 const Divider = () => <div className="w-px h-5 bg-slate-700 mx-1" />;
-
-const LanguageSelector = ({ editor }) => {
-  const { language, setLanguage, loaded } = useLanguageStore();
-  const LANGUAGES = [
-    { code: 'en', label: 'English' },
-    { code: 'ne', label: 'नेपाली' },
-    { code: 'hi', label: 'हिन्दी' },
-  ];
-  
-  if (!loaded) return null;
-  
-  return (
-    <select
-      value={language}
-      onChange={(e) => setLanguage(e.target.value)}
-      className="bg-slate-800 border border-slate-700 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 cursor-pointer min-w-[120px]"
-      title="Document Language"
-    >
-      {LANGUAGES.map((l) => (
-        <option key={l.code} value={l.code}>{l.label}</option>
-      ))}
-    </select>
-  );
-};
 
 export default function ScriptToolbar({ editor }) {
   if (!editor) return null;
@@ -127,9 +101,6 @@ export default function ScriptToolbar({ editor }) {
       <MenuButton onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()} title="Clear Formatting">
         <RemoveFormatting className="h-3.5 w-3.5" />
       </MenuButton>
-
-      <Divider />
-      <LanguageSelector editor={editor} />
     </div>
   );
 }
