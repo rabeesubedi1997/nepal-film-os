@@ -566,7 +566,7 @@ export default function ScriptEditor() {
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Left Sidebar - Scripts List */}
         <aside className="w-64 shrink-0 bg-slate-950 border-r border-slate-800 flex flex-col">
           <div className="p-3 border-b border-slate-800 flex items-center justify-between">
@@ -595,9 +595,9 @@ export default function ScriptEditor() {
         </aside>
 
         {/* Center - Editor */}
-        <main className="flex-1 flex flex-col min-w-0">
+        <main className="flex-1 flex flex-col min-w-0 min-h-0">
           {activeId !== null || title ? (
-            <div className="flex-1 flex flex-col min-h-0">
+            <div className="flex-1 flex flex-col min-h-0 min-w-0">
               <div className="flex items-center gap-2 mb-2 shrink-0 px-4">
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">Screenplay</span>
@@ -628,7 +628,7 @@ export default function ScriptEditor() {
                 {!showSource ? (
                   <div className={`flex-1 flex ${showPreview ? 'flex-row' : ''}`}>
                     <div className={`${showPreview ? 'w-1/2' : 'w-full'} flex flex-col min-w-0`}>
-                      <EditorContent editor={editor} className="flex-1 overflow-y-auto" />
+                      <EditorContent editor={editor} className="flex-1 overflow-y-auto min-h-0" />
                     </div>
                     {showPreview && !showSource && (
                       <div className="w-1/2 flex flex-col border-l border-slate-700 pl-3 min-w-0 bg-slate-900">
