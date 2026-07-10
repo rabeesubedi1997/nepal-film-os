@@ -161,7 +161,7 @@ export default function ScriptEditor() {
           const text = node.textContent;
           if (!text) return;
           const detected = detectElementType(text);
-          if (detected !== node.attrs.elementType) {
+          if (node.attrs.elementType === 'action' && detected !== 'action') {
             tr.setNodeMarkup(pos, undefined, { ...node.attrs, elementType: detected });
             modified = true;
           }
@@ -795,7 +795,6 @@ export default function ScriptEditor() {
                     <Upload className="h-4 w-4" /> Import File
                   </button>
                 </div>
-                <input ref={fileInputRef} type="file" accept=".fountain,.txt,.docx,.pdf" onChange={handleImportFile} className="hidden" />
               </div>
             </div>
           )}
