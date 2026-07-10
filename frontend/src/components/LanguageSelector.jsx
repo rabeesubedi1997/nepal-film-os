@@ -16,11 +16,10 @@ export default function LanguageSelector({ editor }) {
       const selected = LANGUAGES.find(l => l.code === lang);
       const font = selected && selected.font !== 'inherit' ? selected.font : null;
       if (font) {
-        document.documentElement.style.setProperty('--editor-font', font);
+        editor.chain().focus().setFontFamily(font).run();
       } else {
-        document.documentElement.style.removeProperty('--editor-font');
+        editor.chain().focus().unsetFontFamily().run();
       }
-      editor.chain().focus().setDocumentFontFamily(font).run();
     }
   };
 

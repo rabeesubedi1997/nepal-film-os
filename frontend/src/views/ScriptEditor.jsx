@@ -6,6 +6,8 @@ import TextAlign from '@tiptap/extension-text-align';
 import Placeholder from '@tiptap/extension-placeholder';
 import LinkExtension from '@tiptap/extension-link';
 import CharacterCount from '@tiptap/extension-character-count';
+import { TextStyle } from '@tiptap/extension-text-style';
+import FontFamily from '@tiptap/extension-font-family';
 import { ScreenplayNode, detectElementType } from '../extensions';
 import ScriptToolbar, { FontSelector } from '../components/ScriptToolbar';
 import LanguageSelector from '../components/LanguageSelector';
@@ -142,6 +144,10 @@ export default function ScriptEditor() {
       }),
       ScreenplayNode,
       Underline,
+      TextStyle,
+      FontFamily.configure({
+        types: ['textStyle'],
+      }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Placeholder.configure({ placeholder: 'Start writing your script...' }),
       LinkExtension.configure({ openOnClick: false }),
@@ -231,14 +237,6 @@ export default function ScriptEditor() {
         const converted = textToScreenplayHtml(cleanContent.replace(/<[^>]*>/g, ''));
         editor?.commands.setContent(converted);
       }
-      setTimeout(() => {
-        if (editor?.view?.dom) {
-          const p = editor.view.dom.querySelector('p[style*="font-family"]');
-          if (p) {
-            document.documentElement.style.setProperty('--editor-font', p.style.fontFamily);
-          }
-        }
-      }, 50);
     } catch { addToast('Failed to load script', 'error'); }
     setLoading(false);
   };
@@ -249,9 +247,6 @@ export default function ScriptEditor() {
     setTitlePageData(null);
     editor?.commands.setContent(EMPTY_CONTENT);
     setDirty(false);
-    if (editor?.view?.dom) {
-      editor.view.dom.style.fontFamily = '';
-    }
   };
 
   const handleSave = async () => {

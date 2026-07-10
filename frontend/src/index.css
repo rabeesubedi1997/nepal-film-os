@@ -234,7 +234,7 @@ select.input-field { cursor: pointer; }
 
 /* ── Screenplay Editor ────────────────────── */
 .screenplay-editor {
-  font-family: var(--editor-font, 'Courier Prime', 'Courier New', 'Noto Sans Devanagari', Courier, monospace);
+  font-family: 'Courier Prime', 'Courier New', 'Noto Sans Devanagari', Courier, monospace;
   font-size: 12pt;
   line-height: 1.5;
   max-width: 6.5in;
@@ -330,7 +330,7 @@ select.input-field { cursor: pointer; }
 
 /* ── Screenplay Preview ────────────────────── */
 .screenplay-preview {
-  font-family: var(--editor-font, 'Courier Prime', 'Courier New', 'Noto Sans Devanagari', Courier, monospace);
+  font-family: 'Courier Prime', 'Courier New', 'Noto Sans Devanagari', Courier, monospace;
   font-size: 12pt;
   line-height: 1.5;
   max-width: 6.5in;
