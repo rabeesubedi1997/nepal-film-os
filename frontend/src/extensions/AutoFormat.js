@@ -4,7 +4,7 @@ export function applyAutoFormatting(editor) {
   if (!editor) return;
 
   const { doc, tr } = editor.state;
-  const screenNodeType = editor.state.schema.nodes.screenplayNode;
+  const screenNodeType = editor.state.schema.nodes.paragraph;
   if (!screenNodeType) return;
 
   let modified = false;

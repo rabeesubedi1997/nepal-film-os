@@ -36,8 +36,8 @@ const Divider = () => <div className="w-px h-5 bg-slate-700 mx-1" />;
 export default function ScriptToolbar({ editor }) {
   if (!editor) return null;
 
-  const currentType = editor.getAttributes('screenplayNode').type || 'action';
-  const isScreenplay = editor.isActive('screenplayNode');
+  const currentType = editor.getAttributes('paragraph').type || 'action';
+  const isScreenplay = editor.isActive('paragraph');
 
   const setType = (type) => {
     editor.chain().focus().setScriptElement(type).run();

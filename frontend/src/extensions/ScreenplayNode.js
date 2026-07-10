@@ -61,7 +61,7 @@ export function detectElementType(text) {
 }
 
 export const ScreenplayNode = Node.create({
-  name: 'screenplayNode',
+  name: 'paragraph',
 
   group: 'block',
 
