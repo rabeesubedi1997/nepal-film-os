@@ -20,16 +20,14 @@ export default function Layout() {
   const navigate = useNavigate();
   const restored = React.useRef(false);
 
-  const { t, initialize } = useLanguageStore();
+  const { t } = useLanguageStore();
 
   React.useEffect(() => {
     if (!restored.current) {
       restored.current = true;
-      // Fetch films once, then restore last film
       fetchFilms().then(() => restoreLastFilm());
     }
   }, []);
-  React.useEffect(() => { initialize(); }, []);
 
   React.useEffect(() => {
     // Super admins never need to select a film — they can access everything
