@@ -36,19 +36,31 @@ const DEFAULT_TITLE = 'Untitled Script';
 
 const EMPTY_CONTENT = `<div data-type="scene-heading">INT. ROOM - DAY</div><div data-type="action">A desk is covered in papers.</div><div data-type="action">&nbsp;</div><div data-type="character">WRITER</div><div data-type="parenthetical">(quietly)</div><div data-type="dialogue">Time to write.</div><div data-type="action">&nbsp;</div><div data-type="transition">FADE OUT.</div>`;
 
-const LanguageSelector = () => {
+const LanguageSelector = ({ editor }) => {
   const { language, setLanguage } = useLanguageStore();
   const LANGUAGES = [
-    { code: 'en', label: 'English' },
-    { code: 'ne', label: 'नेपाली' },
-    { code: 'hi', label: 'हिन्दी' },
+    { code: 'en', label: 'English', font: 'inherit' },
+    { code: 'ne', label: 'नेपाली', font: '"Noto Sans Devanagari", sans-serif' },
+    { code: 'hi', label: 'हिन्दी', font: '"Noto Sans Devanagari", sans-serif' },
   ];
+  const handleChange = (e) => {
+    const lang = e.target.value;
+    setLanguage(lang);
+    if (editor) {
+      const selected = LANGUAGES.find(l => l.code === lang);
+      if (selected && selected.font !== 'inherit') {
+        editor.chain().focus().setFontFamily(selected.font).run();
+      } else if (selected && selected.font === 'inherit') {
+        editor.chain().focus().unsetFontFamily().run();
+      }
+    }
+  };
   return (
     <select
       value={language}
-      onChange={(e) => setLanguage(e.target.value)}
+      onChange={handleChange}
       className="bg-slate-800 border border-slate-700 text-slate-200 text-xs px-2 py-1.5 rounded-lg focus:outline-none focus:border-amber-500 cursor-pointer min-w-[120px]"
-      title="Document Language"
+      title="Document Language (auto-selects font)"
     >
       {LANGUAGES.map((l) => (
         <option key={l.code} value={l.code}>{l.label}</option>
