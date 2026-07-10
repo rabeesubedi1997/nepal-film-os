@@ -10,6 +10,7 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import FontFamily from '@tiptap/extension-font-family';
 import { ScreenplayNode, detectElementType } from '../extensions';
 import ScriptToolbar, { FontSelector } from '../components/ScriptToolbar';
+import ScriptBubbleMenu from '../components/ScriptBubbleMenu';
 import LanguageSelector from '../components/LanguageSelector';
 import TitlePageEditor, { extractTitlePage, wrapTitlePage, buildTitlePageHtml } from '../components/TitlePageEditor';
 import ScriptReports from '../components/ScriptReports';
@@ -21,6 +22,7 @@ import { useAuthStore } from '../authStore';
 import { useToastStore } from '../toastStore';
 import echo from '../echo';
 import { useLanguageStore } from '../languageStore';
+import { isTransliterationEnabled, transliterateWord } from '../services/transliteration';
 import {
   Plus, Eye, Trash2, Save, FileText,
   Loader, BookOpen, Code, Upload, Download as DownloadIcon, Users, Scissors,
@@ -178,10 +180,42 @@ export default function ScriptEditor() {
     editorProps: {
       attributes: {
         class: 'prose prose-sm prose-invert max-w-none focus:outline-none min-h-[500px] p-6 bg-slate-900 screenplay-editor',
-        style: { fontSize: `${zoom}%` },
+      },
+      handleKeyDown: (view, event) => {
+        if (event.key === ' ') {
+          const { language } = useLanguageStore.getState();
+          if (isTransliterationEnabled(language)) {
+            const { state, dispatch } = view;
+            const { selection, tr } = state;
+            const { $from } = selection;
+            const parent = $from.parent;
+            const textBefore = parent.textBetween(0, $from.parentOffset);
+            const match = textBefore.match(/(\S+)$/);
+            if (match) {
+              const word = match[1];
+              const converted = transliterateWord(word);
+              if (converted !== word) {
+                event.preventDefault();
+                const start = $from.start() + match.index;
+                const end = $from.start() + $from.parentOffset;
+                tr.replaceWith(start, end, state.schema.text(converted));
+                tr.insert(start + converted.length, state.schema.text(' '));
+                dispatch(tr);
+                return true;
+              }
+            }
+          }
+        }
+        return false;
       },
     },
   });
+
+  useEffect(() => {
+    if (editor?.view?.dom) {
+      editor.view.dom.style.zoom = zoom / 100;
+    }
+  }, [zoom, editor]);
 
   const fetchScripts = useCallback(async () => {
     if (!filmId) return;
@@ -669,6 +703,7 @@ export default function ScriptEditor() {
                   <div className={`flex-1 flex ${showPreview ? 'flex-row' : ''}`}>
                     <div className={`${showPreview ? 'w-1/2' : 'w-full'} flex flex-col min-w-0`}>
                       <EditorContent editor={editor} className="flex-1 overflow-y-auto min-h-0" />
+                      <ScriptBubbleMenu editor={editor} />
                     </div>
                     {showPreview && !showSource && (
                       <div className="w-1/2 flex flex-col border-l border-slate-700 pl-3 min-w-0 bg-slate-900">

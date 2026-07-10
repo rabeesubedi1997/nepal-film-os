@@ -2,8 +2,8 @@ import { useLanguageStore } from '../languageStore';
 
 const LANGUAGES = [
   { code: 'en', label: 'English (EN)', font: 'inherit' },
-  { code: 'ne', label: 'Nepali (NE) - ', font: '"Noto Sans Devanagari", sans-serif' },
-  { code: 'hi', label: 'Hindi (HI) - ', font: '"Noto Sans Devanagari", sans-serif' },
+  { code: 'ne', label: 'Nepali (NE)', font: '"Noto Sans Devanagari", sans-serif' },
+  { code: 'hi', label: 'Hindi (HI)', font: '"Noto Sans Devanagari", sans-serif' },
 ];
 
 export default function LanguageSelector({ editor }) {
