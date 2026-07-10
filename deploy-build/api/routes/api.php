@@ -35,6 +35,7 @@ use App\Http\Controllers\Api\FeatureController;
 use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\BeatSheetController;
 use App\Http\Controllers\Api\ScriptCommentController;
+use App\Http\Controllers\Api\Screenplay\ScreenplayExportController;
 
 // Public Auth routes (rate limited to prevent brute force)
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:3,60');
@@ -353,6 +354,13 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/films/{film}/beat-sheets/{beatSheetId}/beats/{beatId}', [BeatSheetController::class, 'updateBeat']);
             Route::delete('/films/{film}/beat-sheets/{beatSheetId}/beats/{beatId}', [BeatSheetController::class, 'destroyBeat']);
             Route::post('/films/{film}/beat-sheets/{beatSheetId}/beats/reorder', [BeatSheetController::class, 'reorderBeats']);
+        });
+
+        // 19. Screenplay Export Module
+        Route::middleware('film.module:script')->group(function () {
+            Route::post('/films/{film}/scripts/{script}/export/pdf', [ScreenplayExportController::class, 'exportPDF']);
+            Route::post('/films/{film}/scripts/{script}/export/docx', [ScreenplayExportController::class, 'exportDOCX']);
+            Route::post('/films/{film}/scripts/{script}/export/fountain', [ScreenplayExportController::class, 'exportFountain']);
         });
     });
 
