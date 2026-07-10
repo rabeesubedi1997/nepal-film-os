@@ -231,6 +231,14 @@ export default function ScriptEditor() {
         const converted = textToScreenplayHtml(cleanContent.replace(/<[^>]*>/g, ''));
         editor?.commands.setContent(converted);
       }
+      setTimeout(() => {
+        if (editor?.view?.dom) {
+          const p = editor.view.dom.querySelector('p[style*="font-family"]');
+          if (p) {
+            editor.view.dom.style.fontFamily = p.style.fontFamily;
+          }
+        }
+      }, 50);
     } catch { addToast('Failed to load script', 'error'); }
     setLoading(false);
   };
@@ -241,6 +249,9 @@ export default function ScriptEditor() {
     setTitlePageData(null);
     editor?.commands.setContent(EMPTY_CONTENT);
     setDirty(false);
+    if (editor?.view?.dom) {
+      editor.view.dom.style.fontFamily = '';
+    }
   };
 
   const handleSave = async () => {

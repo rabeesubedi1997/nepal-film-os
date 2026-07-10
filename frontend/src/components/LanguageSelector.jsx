@@ -16,6 +16,9 @@ export default function LanguageSelector({ editor }) {
       const selected = LANGUAGES.find(l => l.code === lang);
       const font = selected && selected.font !== 'inherit' ? selected.font : null;
       editor.chain().focus().setDocumentFontFamily(font).run();
+      if (editor.view?.dom) {
+        editor.view.dom.style.fontFamily = font || '';
+      }
     }
   };
 

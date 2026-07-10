@@ -54,10 +54,14 @@ const MenuButton = ({ onClick, active, children, title }) => (
 const Divider = () => <div className="w-px h-5 bg-slate-700 mx-1" />;
 
 const FontSelector = ({ editor }) => {
-  const currentFont = editor.getAttributes('paragraph').fontFamily || 'inherit';
+  const currentFont = editor.view?.dom?.style?.fontFamily || editor.getAttributes('paragraph').fontFamily || 'inherit';
   const handleChange = (e) => {
     const font = e.target.value;
+    const fontValue = font === 'inherit' ? '' : font;
     editor.chain().focus().setDocumentFontFamily(font === 'inherit' ? null : font).run();
+    if (editor.view?.dom) {
+      editor.view.dom.style.fontFamily = fontValue;
+    }
   };
   
   return (
