@@ -15,10 +15,12 @@ export default function LanguageSelector({ editor }) {
     if (editor) {
       const selected = LANGUAGES.find(l => l.code === lang);
       const font = selected && selected.font !== 'inherit' ? selected.font : null;
-      editor.chain().focus().setDocumentFontFamily(font).run();
-      if (editor.view?.dom) {
-        editor.view.dom.style.fontFamily = font || '';
+      if (font) {
+        document.documentElement.style.setProperty('--editor-font', font);
+      } else {
+        document.documentElement.style.removeProperty('--editor-font');
       }
+      editor.chain().focus().setDocumentFontFamily(font).run();
     }
   };
 

@@ -235,7 +235,7 @@ export default function ScriptEditor() {
         if (editor?.view?.dom) {
           const p = editor.view.dom.querySelector('p[style*="font-family"]');
           if (p) {
-            editor.view.dom.style.fontFamily = p.style.fontFamily;
+            document.documentElement.style.setProperty('--editor-font', p.style.fontFamily);
           }
         }
       }, 50);
