@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Screenplay;
 
 use App\Http\Controllers\Controller;
+use Barryvdh\DomPDF\PDF as DomPDF;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 
@@ -213,18 +214,32 @@ CSS;
             File::makeDirectory($tempDir, 0755, true);
         }
 
-        $htmlFile = $tempDir . '/' . uniqid('screenplay_') . '.html';
         $pdfFile = $tempDir . '/' . uniqid('screenplay_') . '.pdf';
 
+        // 1. Try DomPDF (best quality, works on all servers)
+        try {
+            /** @var DomPDF $dompdf */
+            $dompdf = app(DomPDF::class);
+            $dompdf->loadHTML($html);
+            $dompdf->setPaper('letter');
+            $dompdf->render();
+            file_put_contents($pdfFile, $dompdf->output());
+            if (File::exists($pdfFile) && filesize($pdfFile) > 1000) {
+                return $pdfFile;
+            }
+        } catch (\Exception $e) {
+            // DomPDF failed, try fallback
+        }
+
+        $htmlFile = $tempDir . '/' . uniqid('screenplay_') . '.html';
         File::put($htmlFile, $html);
 
-        // Try multiple PDF generators in order
+        // 2. Chrome headless (fallback)
         $commands = [
-            // Chrome headless (best quality)
             "google-chrome-stable --headless --disable-gpu --no-sandbox --print-to-pdf={$pdfFile} {$htmlFile}",
             "chromium --headless --disable-gpu --no-sandbox --print-to-pdf={$pdfFile} {$htmlFile}",
             "chromium-browser --headless --disable-gpu --no-sandbox --print-to-pdf={$pdfFile} {$htmlFile}",
-            // wkhtmltopdf (good fallback)
+            // 3. wkhtmltopdf (last fallback)
             "wkhtmltopdf --page-size Letter --margin-top 1in --margin-bottom 1in --margin-left 1.5in --margin-right 1.5in --encoding utf-8 {$htmlFile} {$pdfFile}",
         ];
 

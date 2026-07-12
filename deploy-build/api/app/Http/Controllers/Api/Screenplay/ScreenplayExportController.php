@@ -3,20 +3,14 @@
 namespace App\Http\Controllers\Api\Screenplay;
 
 use App\Http\Controllers\Controller;
-use App\Models\Script;
+use Barryvdh\DomPDF\PDF as DomPDF;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Process;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Symfony\Component\Process\Process as SymfonyProcess;
+use Illuminate\Support\Facades\File;
 
 class ScreenplayExportController extends Controller
 {
-    public function exportPDF(Request $request, $filmId, $scriptId)
+    public function exportPDF(Request $request)
     {
-        $script = Script::where('film_id', $filmId)->findOrFail($scriptId);
-        
         $request->validate([
             'html' => 'required|string',
             'title' => 'nullable|string|max:255',
@@ -25,370 +19,315 @@ class ScreenplayExportController extends Controller
         ]);
 
         $html = $request->input('html');
-        $title = $request->input('title', $script->title);
+        $title = $request->input('title', 'Screenplay');
         $fontSize = $request->input('fontSize', 12);
         $fontFamily = $request->input('fontFamily', 'Courier Prime');
 
-        // Build full HTML with screenplay CSS
-        $fullHtml = $this->buildPrintHtml($html, $title, $fontSize, $fontFamily);
+        // Generate professional screenplay CSS
+        $css = $this->getScreenplayCSS($fontSize, $fontFamily);
 
-        // Generate PDF using DomPDF
-        try {
-            $pdf = Pdf::loadHTML($fullHtml);
-            $pdf->setPaper('letter');
-            return $pdf->download($title . '.pdf');
-        } catch (\Exception $e) {
-            // Fallback: try Chrome headless
-            $pdfPath = $this->generatePdfWithChrome($fullHtml);
-            
-            if ($pdfPath && file_exists($pdfPath)) {
-                return response()->file($pdfPath, [
-                    'Content-Type' => 'application/pdf',
-                    'Content-Disposition' => 'attachment; filename="' . $title . '.pdf"',
-                ])->deleteFileAfterSend(true);
-            }
+        $fullHTML = <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{$title}</title>
+    <style>
+        {$css}
+    </style>
+</head>
+<body>
+    {$html}
+</body>
+</html>
+HTML;
 
-            // Last resort: return HTML
-            return response($fullHtml, 200, [
-                'Content-Type' => 'text/html',
-                'Content-Disposition' => 'inline; filename="' . $title . '.html"',
-            ]);
+        // Use headless Chrome via puppeteer or fallback to wkhtmltopdf
+        $pdfPath = $this->generatePDF($fullHTML, $title);
+
+        if ($pdfPath && File::exists($pdfPath)) {
+            return response()->download($pdfPath, "{$title}.pdf", [
+                'Content-Type' => 'application/pdf',
+            ])->deleteFileAfterSend(true);
         }
+
+        // Fallback: return HTML for browser print
+        return response($fullHTML, 200, [
+            'Content-Type' => 'text/html',
+            'Content-Disposition' => 'inline; filename="' . $title . '.html"',
+        ]);
     }
 
-    public function exportDOCX(Request $request, $filmId, $scriptId)
+    public function exportDOCX(Request $request)
     {
-        $script = Script::where('film_id', $filmId)->findOrFail($scriptId);
-        
         $request->validate([
             'html' => 'required|string',
             'title' => 'nullable|string|max:255',
         ]);
 
         $html = $request->input('html');
-        $title = $request->input('title', $script->title);
+        $title = $request->input('title', 'Screenplay');
 
-        $fullHtml = $this->buildDocxHtml($html, $title);
+        // Simple DOCX generation - returns HTML that Word can open
+        $docxHTML = $this->wrapForDOCX($html, $title);
 
-        return response($fullHtml, 200, [
+        return response($docxHTML, 200, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'Content-Disposition' => 'attachment; filename="' . $title . '.doc"',
+            'Content-Disposition' => 'attachment; filename="' . $title . '.docx"',
         ]);
     }
 
-    public function exportFountain(Request $request, $filmId, $scriptId)
+    public function exportFountain(Request $request)
     {
-        $script = Script::where('film_id', $filmId)->findOrFail($scriptId);
-        
         $request->validate([
             'html' => 'required|string',
             'title' => 'nullable|string|max:255',
         ]);
 
         $html = $request->input('html');
-        $title = $request->input('title', $script->title);
+        $title = $request->input('title', 'Screenplay');
 
-        $fountain = $this->convertToFountain($html, $title);
+        $fountain = $this->convertToFountain($html);
 
         return response($fountain, 200, [
-            'Content-Type' => 'text/plain; charset=utf-8',
+            'Content-Type' => 'text/plain',
             'Content-Disposition' => 'attachment; filename="' . $title . '.fountain"',
         ]);
     }
 
-    private function buildPrintHtml($content, $title, $fontSize, $fontFamily)
+    private function getScreenplayCSS($fontSize, $fontFamily)
     {
-        $css = $this->getScreenplayCss($fontSize, $fontFamily);
+        $pt = $fontSize . 'pt';
+        $lineHeight = ($fontSize * 1.0) . 'pt';
         
-        return <<<HTML
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>$title</title>
-    <style>$css</style>
-    <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <div class="screenplay-editor" style="font-size: {$fontSize}pt; font-family: '$fontFamily', 'Courier Prime', monospace;">
-        $content
-    </div>
-</body>
-</html>
-HTML;
-    }
-
-    private function buildDocxHtml($content, $title)
-    {
-        $css = $this->getScreenplayCss(12, 'Courier Prime');
-        
-        return <<<HTML
-<!DOCTYPE html>
-<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>$title</title>
-    <style>$css</style>
-    <!--[if gte mso 9]>
-    <xml>
-        <w:WordDocument>
-            <w:View>Print</w:View>
-            <w:Zoom>100</w:Zoom>
-            <w:DoNotOptimizeForBrowser/>
-        </w:WordDocument>
-    </xml>
-    <![endif]-->
-</head>
-<body>
-    <div class="screenplay-editor" style="font-size: 12pt; font-family: 'Courier Prime', 'Courier New', monospace;">
-        $content
-    </div>
-</body>
-</html>
-HTML;
-    }
-
-    private function getScreenplayCss($fontSize = 12, $fontFamily = 'Courier Prime')
-    {
         return <<<CSS
 @page {
     size: letter;
     margin: 1in 1.5in 1in 1.5in;
     @bottom-center {
-        content: "Page " counter(page);
-        font-family: '$fontFamily', monospace;
+        content: counter(page);
+        font-family: {$fontFamily};
         font-size: 10pt;
         color: #666;
     }
 }
 
 * {
-    margin: 0;
-    padding: 0;
     box-sizing: border-box;
 }
 
 body {
-    font-family: '$fontFamily', 'Courier Prime', 'Courier New', Courier, monospace;
-    font-size: ${fontSize}pt;
-    line-height: 1.0;
+    font-family: '{$fontFamily}', 'Courier New', Courier, monospace;
+    font-size: {$pt};
+    line-height: {$lineHeight};
     color: #000;
     background: #fff;
-    max-width: 8.5in;
-    margin: 0 auto;
+    margin: 0;
     padding: 0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
 }
 
-.screenplay-editor {
-    font-family: '$fontFamily', 'Courier Prime', 'Courier New', Courier, monospace;
-    font-size: ${fontSize}pt;
-    line-height: 1.0;
-    color: #000;
-    background: #fff;
-    max-width: 8.5in;
-    margin: 0 auto;
-    padding: 1in 1.5in;
-    min-height: 11in;
+.screenplay-editor-content {
+    max-width: 100%;
 }
 
 .screenplay-element {
-    margin: 0;
-    padding: 0;
+    display: block;
     white-space: pre-wrap;
     word-wrap: break-word;
-    font-family: inherit;
-    font-size: inherit;
-    line-height: 1.0;
 }
 
-.screenplay-scene-heading {
-    margin: 24pt 0 12pt 0;
+[data-element-type="scene-heading"] {
     text-transform: uppercase;
-    font-weight: bold;
-    text-indent: 0;
+    font-weight: 700;
+    margin: 24pt 0 12pt 0;
     page-break-after: avoid;
 }
 
-.screenplay-action {
+[data-element-type="action"] {
+    text-align: justify;
     margin: 12pt 0;
     text-indent: 0;
-    text-align: justify;
-    widows: 2;
-    orphans: 2;
 }
 
-.screenplay-character {
+[data-element-type="character"] {
+    text-transform: uppercase;
+    font-weight: 700;
     margin: 12pt 0 0 222pt;
     max-width: 222pt;
-    text-transform: uppercase;
-    font-weight: bold;
-    text-indent: 0;
     page-break-after: avoid;
 }
 
-.screenplay-parenthetical {
+[data-element-type="parenthetical"] {
+    font-style: italic;
     margin: 6pt 0 6pt 186pt;
     max-width: 150pt;
-    font-style: italic;
-    text-indent: 0;
     page-break-after: avoid;
 }
 
-.screenplay-dialogue {
+[data-element-type="dialogue"] {
     margin: 0 0 12pt 150pt;
     max-width: 252pt;
-    text-indent: 0;
-    text-align: left;
-    widows: 2;
-    orphans: 2;
+    page-break-inside: avoid;
 }
 
-.screenplay-transition {
-    margin: 24pt 0 12pt auto;
-    text-align: right;
+[data-element-type="transition"] {
     text-transform: uppercase;
-    font-weight: bold;
-    text-indent: 0;
+    font-weight: 700;
+    text-align: right;
+    margin: 24pt 0 12pt auto;
     max-width: 360pt;
     page-break-before: avoid;
 }
 
-.screenplay-shot {
-    margin: 12pt 0;
-    text-indent: 0;
+[data-element-type="shot"] {
     font-style: italic;
     text-transform: uppercase;
+    margin: 12pt 0;
+}
+
+.page-break {
+    page-break-after: always;
 }
 
 @media print {
-    .screenplay-editor {
+    body {
         margin: 0;
-        padding: 1in 1.5in;
-        max-width: none;
-        box-shadow: none;
+        padding: 0;
     }
-    .screenplay-element {
+    [data-element-type] {
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+    }
+    .no-print {
+        display: none !important;
     }
 }
 CSS;
     }
 
-    private function convertToFountain($html, $title)
+    private function generatePDF($html, $title)
+    {
+        $tempDir = storage_path('app/temp');
+        if (!File::exists($tempDir)) {
+            File::makeDirectory($tempDir, 0755, true);
+        }
+
+        $pdfFile = $tempDir . '/' . uniqid('screenplay_') . '.pdf';
+
+        // 1. Try DomPDF (best quality, works on all servers)
+        try {
+            /** @var DomPDF $dompdf */
+            $dompdf = app(DomPDF::class);
+            $dompdf->loadHTML($html);
+            $dompdf->setPaper('letter');
+            $dompdf->render();
+            file_put_contents($pdfFile, $dompdf->output());
+            if (File::exists($pdfFile) && filesize($pdfFile) > 1000) {
+                return $pdfFile;
+            }
+        } catch (\Exception $e) {
+            // DomPDF failed, try fallback
+        }
+
+        $htmlFile = $tempDir . '/' . uniqid('screenplay_') . '.html';
+        File::put($htmlFile, $html);
+
+        // 2. Chrome headless (fallback)
+        $commands = [
+            "google-chrome-stable --headless --disable-gpu --no-sandbox --print-to-pdf={$pdfFile} {$htmlFile}",
+            "chromium --headless --disable-gpu --no-sandbox --print-to-pdf={$pdfFile} {$htmlFile}",
+            "chromium-browser --headless --disable-gpu --no-sandbox --print-to-pdf={$pdfFile} {$htmlFile}",
+            // 3. wkhtmltopdf (last fallback)
+            "wkhtmltopdf --page-size Letter --margin-top 1in --margin-bottom 1in --margin-left 1.5in --margin-right 1.5in --encoding utf-8 {$htmlFile} {$pdfFile}",
+        ];
+
+        foreach ($commands as $cmd) {
+            $result = shell_exec($cmd . ' 2>&1');
+            if (File::exists($pdfFile) && filesize($pdfFile) > 1000) {
+                @unlink($htmlFile);
+                return $pdfFile;
+            }
+        }
+
+        // Cleanup
+        @unlink($htmlFile);
+        @unlink($pdfFile);
+
+        return null;
+    }
+
+    private function wrapForDOCX($html, $title)
+    {
+        // Word can open HTML files with .docx extension
+        // For true DOCX, would need a library like PhpOffice\PhpWord
+        return <<<HTML
+<!DOCTYPE html>
+<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head>
+    <meta charset="utf-8">
+    <title>{$title}</title>
+    <style>
+        @page { size: letter; margin: 1in 1.5in; }
+        body { font-family: 'Courier New', Courier, monospace; font-size: 12pt; line-height: 1.0; }
+        [data-element-type="scene-heading"] { text-transform: uppercase; font-weight: bold; margin: 24pt 0 12pt 0; page-break-after: avoid; }
+        [data-element-type="action"] { text-align: justify; margin: 12pt 0; }
+        [data-element-type="character"] { text-transform: uppercase; font-weight: bold; margin: 12pt 0 0 222pt; max-width: 222pt; page-break-after: avoid; }
+        [data-element-type="parenthetical"] { font-style: italic; margin: 6pt 0 6pt 186pt; max-width: 150pt; page-break-after: avoid; }
+        [data-element-type="dialogue"] { margin: 0 0 12pt 150pt; max-width: 252pt; page-break-inside: avoid; }
+        [data-element-type="transition"] { text-transform: uppercase; font-weight: bold; text-align: right; margin: 24pt 0 12pt auto; max-width: 360pt; page-break-before: avoid; }
+    </style>
+    <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]-->
+</head>
+<body>
+    {$html}
+</body>
+</html>
+HTML;
+    }
+
+    private function convertToFountain($html)
     {
         $dom = new \DOMDocument();
         libxml_use_internal_errors(true);
-        $dom->loadHTML('<?xml encoding="UTF-8">' . $html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        $dom->loadHTML('<?xml encoding="utf-8"?>' . $html, LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
         libxml_clear_errors();
 
         $xpath = new \DOMXPath($dom);
         $elements = $xpath->query('//*[@data-element-type]');
 
-        $lines = [];
-        $lines[] = "Title: $title";
-        $lines[] = "Author: ";
-        $lines[] = "Source: ";
-        $lines[] = "Draft: ";
-        $lines[] = "Date: " . date('Y-m-d');
-        $lines[] = "Contact: ";
-        $lines[] = "";
-
+        $fountain = '';
         foreach ($elements as $el) {
             $type = $el->getAttribute('data-element-type');
             $text = trim($el->textContent);
-            if (!$text) continue;
+            
+            if (empty($text)) continue;
 
             switch ($type) {
                 case 'scene-heading':
-                    $lines[] = strtoupper($text);
-                    break;
-                case 'action':
-                    $lines[] = $text;
+                    $fountain .= strtoupper($text) . "\n\n";
                     break;
                 case 'character':
-                    $lines[] = strtoupper($text);
+                    $fountain .= strtoupper($text) . "\n";
                     break;
                 case 'parenthetical':
-                    $lines[] = '(' . trim($text, '()') . ')';
+                    $fountain .= "({$text})\n";
                     break;
                 case 'dialogue':
-                    $lines[] = $text;
+                    $fountain .= $text . "\n\n";
                     break;
                 case 'transition':
-                    $lines[] = '> ' . strtoupper($text);
+                    $fountain .= strtoupper($text) . "\n\n";
                     break;
                 case 'shot':
-                    $lines[] = strtoupper($text);
+                    $fountain .= $text . "\n\n";
                     break;
                 default:
-                    $lines[] = $text;
-            }
-
-            // Add blank line between elements (except after transition)
-            if ($type !== 'transition') {
-                $lines[] = "";
+                    $fountain .= $text . "\n\n";
             }
         }
 
-        return implode("\n", $lines);
-    }
-
-    private function generatePdfWithChrome($html)
-    {
-        // Try to find Chrome/Chromium
-        $chromePaths = [
-            '/usr/bin/google-chrome',
-            '/usr/bin/chromium',
-            '/usr/bin/chromium-browser',
-            'C:\Program Files\Google\Chrome\Application\chrome.exe',
-            'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe',
-        ];
-
-        $chrome = null;
-        foreach ($chromePaths as $path) {
-            if (file_exists($path)) {
-                $chrome = $path;
-                break;
-            }
-        }
-
-        if (!$chrome) {
-            // Try which command
-            $result = shell_exec('which google-chrome 2>/dev/null || which chromium 2>/dev/null || which chromium-browser 2>/dev/null');
-            if ($result) {
-                $chrome = trim($result);
-            }
-        }
-
-        if (!$chrome) {
-            return false;
-        }
-
-        $tempDir = storage_path('app/temp');
-        if (!file_exists($tempDir)) {
-            mkdir($tempDir, 0755, true);
-        }
-
-        $htmlFile = $tempDir . '/export_' . uniqid() . '.html';
-        $pdfFile = $tempDir . '/export_' . uniqid() . '.pdf';
-
-        file_put_contents($htmlFile, $html);
-
-        $cmd = "$chrome --headless --disable-gpu --no-sandbox --disable-dev-shm-usage --print-to-pdf=$pdfFile --print-to-pdf-no-header $htmlFile";
-
-        $process = new SymfonyProcess($cmd);
-        $process->setTimeout(60);
-        $process->run();
-
-        if ($process->isSuccessful() && file_exists($pdfFile) && filesize($pdfFile) > 0) {
-            // Clean up HTML file
-            @unlink($htmlFile);
-            return $pdfFile;
-        }
-
-        @unlink($htmlFile);
-        @unlink($pdfFile);
-        return false;
+        return $fountain;
     }
 }
