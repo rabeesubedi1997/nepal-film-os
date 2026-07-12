@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\Screenplay;
 
 use App\Http\Controllers\Controller;
-use Barryvdh\DomPDF\PDF as DomPDF;
+use Dompdf\Dompdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 
@@ -216,11 +216,10 @@ CSS;
 
         $pdfFile = $tempDir . '/' . uniqid('screenplay_') . '.pdf';
 
-        // 1. Try DomPDF (best quality, works on all servers)
+        // 1. Try DomPDF (pure PHP, works on all servers)
         try {
-            /** @var DomPDF $dompdf */
-            $dompdf = app(DomPDF::class);
-            $dompdf->loadHTML($html);
+            $dompdf = new Dompdf();
+            $dompdf->loadHtml($html);
             $dompdf->setPaper('letter');
             $dompdf->render();
             file_put_contents($pdfFile, $dompdf->output());
