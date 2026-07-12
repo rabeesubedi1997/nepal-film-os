@@ -55,15 +55,11 @@ const MenuButton = ({ onClick, active, children, title }) => (
 const Divider = () => <div className="w-px h-5 bg-slate-700 mx-1" />;
 
 const FontSelector = ({ editor }) => {
-  const currentFont = editor?.getAttributes('textStyle').fontFamily || 'inherit';
+  const currentFont = editor?.getAttributes('paragraph')?.fontFamily || 'inherit';
   const handleChange = (e) => {
     const font = e.target.value;
     if (!editor) return;
-    if (font === 'inherit') {
-      editor.chain().focus().unsetFontFamily().run();
-    } else {
-      editor.chain().focus().setFontFamily(font).run();
-    }
+    editor.chain().focus().setParagraphFontFamily(font === 'inherit' ? null : font).run();
   };
   
   return (

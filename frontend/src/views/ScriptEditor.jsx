@@ -11,6 +11,8 @@ import FontFamily from '@tiptap/extension-font-family';
 import { ScreenplayNode, detectElementType } from '../extensions';
 import ScriptToolbar, { FontSelector } from '../components/ScriptToolbar';
 import ScriptBubbleMenu from '../components/ScriptBubbleMenu';
+import CharacterAutocomplete from '../extensions/CharacterAutocomplete';
+import PageBreakRuler from '../components/PageBreakRuler';
 import LanguageSelector from '../components/LanguageSelector';
 import TitlePageEditor, { extractTitlePage, wrapTitlePage, buildTitlePageHtml } from '../components/TitlePageEditor';
 import ScriptReports from '../components/ScriptReports';
@@ -30,7 +32,7 @@ import {
   BarChart3, Volume2, MessageSquare, History,
   ChevronLeft, ChevronRight, Search,
   ZoomIn, ZoomOut,
-  FilePlus, ChevronUp
+  FilePlus, ChevronUp, Target
 } from 'lucide-react';
 
 const DEFAULT_TITLE = 'Untitled Script';
@@ -138,6 +140,8 @@ export default function ScriptEditor() {
   const [zoom, setZoom] = useState(100);
   const [searchQuery, setSearchQuery] = useState('');
   const [showFindReplace, setShowFindReplace] = useState(false);
+  const [typewriterMode, setTypewriterMode] = useState(false);
+  const editorContainerRef = useRef(null);
 
   const editor = useEditor({
     extensions: [
@@ -205,6 +209,32 @@ export default function ScriptEditor() {
       editor.view.dom.style.zoom = zoom / 100;
     }
   }, [zoom, editor]);
+
+  useEffect(() => {
+    if (!editor || !typewriterMode) return;
+    const scrollToCenter = () => {
+      try {
+        const { view } = editor;
+        const { selection } = view.state;
+        const { $from } = selection;
+        const coords = view.coordsAtPos($from.pos);
+        if (!coords) return;
+        const container = view.dom.closest('.screenplay-editor-wrapper');
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        const targetY = rect.top + rect.height / 3;
+        const diff = coords.top - targetY;
+        if (Math.abs(diff) > 30) container.scrollTop += diff;
+      } catch { /* ignore */ }
+    };
+    editor.on('selectionUpdate', scrollToCenter);
+    editor.on('update', scrollToCenter);
+    scrollToCenter();
+    return () => {
+      editor.off('selectionUpdate', scrollToCenter);
+      editor.off('update', scrollToCenter);
+    };
+  }, [editor, typewriterMode]);
 
   const fetchScripts = useCallback(async () => {
     if (!filmId) return;
@@ -607,6 +637,9 @@ export default function ScriptEditor() {
           </div>
           <LanguageSelector editor={editor} />
           <div className="flex items-center gap-1">
+            <button onClick={() => setTypewriterMode(!typewriterMode)} className={`p-1.5 rounded transition ${typewriterMode ? 'bg-amber-500/10 text-amber-400' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'}`} title="Typewriter Mode — keeps cursor centered while typing">
+              <Target className="h-4 w-4" />
+            </button>
             <button onClick={() => setShowPreview(!showPreview)} className={`p-1.5 rounded transition ${showPreview ? 'bg-amber-500/10 text-amber-400' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800'}`} title="Preview">
               <Eye className="h-4 w-4" />
             </button>
@@ -691,8 +724,12 @@ export default function ScriptEditor() {
                 {!showSource ? (
                   <div className={`flex-1 flex ${showPreview ? 'flex-row' : ''}`}>
                     <div className={`${showPreview ? 'w-1/2' : 'w-full'} flex flex-col min-w-0`}>
-                      <EditorContent editor={editor} className="flex-1 overflow-y-auto min-h-0" />
+                      <div className="flex-1 overflow-y-auto min-h-0 screenplay-editor-wrapper relative">
+                        <EditorContent editor={editor} className="min-h-full" />
+                        <PageBreakRuler editor={editor} />
+                      </div>
                       <ScriptBubbleMenu editor={editor} />
+                      <CharacterAutocomplete editor={editor} />
                     </div>
                     {showPreview && !showSource && (
                       <div className="w-1/2 flex flex-col border-l border-slate-700 pl-3 min-w-0 bg-slate-900">
@@ -790,12 +827,12 @@ export default function ScriptEditor() {
                 <div className="flex items-center gap-4 text-xs text-slate-400">
                   <span>Ln {editor?.state.selection?.anchor || 0}, Col {editor?.state.selection?.head || 0}</span>
                   <span>{wordCount} words</span>
-                  <span>{charCount} characters</span>
-                  <span>Page {pageCount}</span>
+                  <span>{charCount} chars</span>
+                  <span>~{pageCount} pages</span>
                 </div>
                 <div className="flex items-center gap-3 text-xs text-slate-400">
+                  {typewriterMode && <span className="text-amber-400 font-medium">TYP</span>}
                   <span>{language.toUpperCase()}</span>
-                  <span>UTF-8</span>
                   <span>Screenplay</span>
                 </div>
               </footer>

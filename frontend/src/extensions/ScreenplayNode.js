@@ -45,6 +45,18 @@ export const ScreenplayNode = Paragraph.extend({
         parseHTML: element => element.getAttribute('data-scene-number') || null,
         renderHTML: attributes => attributes.sceneNumber ? { 'data-scene-number': attributes.sceneNumber } : {},
       },
+      fontFamily: {
+        default: null,
+        parseHTML: element => {
+          const style = element.getAttribute('style') || '';
+          const match = style.match(/font-family\s*:\s*([^;]+)/i);
+          return match ? match[1].trim() : null;
+        },
+        renderHTML: attributes => {
+          if (!attributes.fontFamily) return {};
+          return { style: `font-family: ${attributes.fontFamily}` };
+        },
+      },
     };
   },
 
@@ -59,11 +71,14 @@ export const ScreenplayNode = Paragraph.extend({
 
   renderHTML({ node, HTMLAttributes }) {
     const type = node.attrs.elementType;
+    const font = node.attrs.fontFamily;
+    const styleAttr = font ? `font-family: ${font}` : '';
     return ['p', {
       ...HTMLAttributes,
       class: `screenplay-element screenplay-${type}`,
       'data-element-type': type,
       'data-type': type,
+      ...(font ? { style: styleAttr } : {}),
     }, 0];
   },
 
@@ -85,6 +100,19 @@ export const ScreenplayNode = Paragraph.extend({
           attrs: { elementType },
           content: [{ type: 'text', text: '\u00A0' }],
         });
+      },
+
+      setParagraphFontFamily: (fontFamily) => ({ commands, editor }) => {
+        const { selection } = editor.state;
+        const { $from } = selection;
+        for (let depth = $from.depth; depth > 0; depth--) {
+          const node = $from.node(depth);
+          if (node.type.name === 'paragraph') {
+            const pos = $from.before(depth);
+            return commands.setNodeMarkup(pos, undefined, { ...node.attrs, fontFamily: fontFamily || null });
+          }
+        }
+        return false;
       },
 
     };

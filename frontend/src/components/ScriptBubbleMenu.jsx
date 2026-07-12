@@ -17,7 +17,7 @@ const FONT_FAMILIES = [
 export default function ScriptBubbleMenu({ editor }) {
   if (!editor) return null;
 
-  const currentFont = editor.getAttributes('textStyle').fontFamily || 'inherit';
+  const currentFont = editor.getAttributes('paragraph')?.fontFamily || 'inherit';
 
   return (
     <BubbleMenu
@@ -32,11 +32,8 @@ export default function ScriptBubbleMenu({ editor }) {
         value={currentFont}
         onChange={(e) => {
           const font = e.target.value;
-          if (font === 'inherit') {
-            editor.chain().focus().unsetFontFamily().run();
-          } else {
-            editor.chain().focus().setFontFamily(font).run();
-          }
+          if (!editor) return;
+          editor.chain().focus().setParagraphFontFamily(font === 'inherit' ? null : font).run();
         }}
         className="bg-slate-800 border border-slate-700 text-slate-200 text-[11px] px-1.5 py-1 rounded focus:outline-none focus:border-amber-500 cursor-pointer min-w-[110px]"
       >
