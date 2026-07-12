@@ -14,6 +14,7 @@ export const ELEMENT_TYPES = [
 const SCENE_HEADING_PATTERN = /^(INT|EXT|INT\/EXT|I\/E)\.?\s+/i;
 const TRANSITION_PATTERN = /^(CUT TO|FADE TO|FADE OUT|FADE IN|DISSOLVE TO|SMASH CUT TO|MATCH CUT TO|JUMP CUT TO|WIPE TO|IRIS IN|IRIS OUT)\.?/i;
 const CHARACTER_PATTERN = /^[A-Z][A-Z\s\.\-']+$/;
+const NON_CHARACTER = /^(THE END|FADE OUT\.?|FADE IN\.?|FREEZE FRAME|IRIS IN|IRIS OUT|TITLE:|SUBTITLE:|BACK TO SCENE|RESUME|CONTINUED|CONTINUED:|MORE|MORE:)$/i;
 const PARENTHETICAL_PATTERN = /^\(.+\)$/;
 const SHOT_PATTERN = /^(CLOSE ON|CLOSE UP|CLOSEUP|WIDE SHOT|WIDE|MEDIUM SHOT|MEDIUM|POV|POINT OF VIEW|ANGLE ON|PAN|TILT|ZOOM|TRACKING|DOLLY|CRANE|AERIAL|INSERT|INTERCUT|SPLIT SCREEN|MONTAGE|SERIES OF SHOTS)\s*:?/i;
 
@@ -24,7 +25,7 @@ export function detectElementType(text) {
   if (TRANSITION_PATTERN.test(trimmed)) return 'transition';
   if (SHOT_PATTERN.test(trimmed)) return 'shot';
   if (PARENTHETICAL_PATTERN.test(trimmed)) return 'parenthetical';
-  if (CHARACTER_PATTERN.test(trimmed) && trimmed.length < 40 && !trimmed.includes('  ')) return 'character';
+  if (CHARACTER_PATTERN.test(trimmed) && trimmed.length < 40 && !trimmed.includes('  ') && !NON_CHARACTER.test(trimmed)) return 'character';
   return 'action';
 }
 

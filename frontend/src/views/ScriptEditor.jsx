@@ -25,6 +25,7 @@ import { useToastStore } from '../toastStore';
 import echo from '../echo';
 import { useLanguageStore } from '../languageStore';
 import { transliterateWord } from '../services/transliteration';
+import { fountainToScreenplayHtml, screenplayToFountain, screenplayToPlainText as screenplayHtmlToPlainText, convertHtmlToScreenplay, downloadBlob } from '../utils/screenplay';
 import {
   Plus, Eye, Trash2, Save, FileText,
   Loader, BookOpen, Code, Upload, Download as DownloadIcon, Users, Scissors,
@@ -39,39 +40,7 @@ const DEFAULT_TITLE = 'Untitled Script';
 
 const EMPTY_CONTENT = `<div data-type="scene-heading">INT. ROOM - DAY</div><div data-type="action">A desk is covered in papers.</div><div data-type="action">&nbsp;</div><div data-type="character">WRITER</div><div data-type="parenthetical">(quietly)</div><div data-type="dialogue">Time to write.</div><div data-type="action">&nbsp;</div><div data-type="transition">FADE OUT.</div>`;
 
-function textToScreenplayHtml(text) {
-  const lines = text.split('\n');
-  return lines.map(line => {
-    const trimmed = line.trim();
-    if (!trimmed) return '<div data-type="action">&nbsp;</div>';
-    const type = detectElementType(trimmed);
-    return `<div data-type="${type}">${trimmed}</div>`;
-  }).join('');
-}
 
-function screenplayHtmlToFountain(html) {
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  const blocks = div.querySelectorAll('[data-type]');
-  return Array.from(blocks).map(el => {
-    const text = el.textContent.replace(/\u00A0/g, ' ').trim();
-    const type = el.getAttribute('data-type');
-    if (type === 'action' && text === '') return '';
-    if (type === 'scene-heading' && text.startsWith('.')) return text;
-    if (type === 'scene-heading') return text.toUpperCase();
-    if (type === 'character') return text.toUpperCase();
-    return text;
-  }).join('\n\n');
-}
-
-function screenplayHtmlToPlainText(html) {
-  const div = document.createElement('div');
-  div.innerHTML = html;
-  return Array.from(div.querySelectorAll('[data-type]'))
-    .map(el => el.textContent.replace(/\u00A0/g, ' ').trim())
-    .filter(t => t)
-    .join('\n\n');
-}
 
 const screenStyles = `
   @page { margin: 0.5in 1in 0.5in 1.5in; size: letter; }
@@ -287,7 +256,7 @@ export default function ScriptEditor() {
       if (cleanContent.includes('data-type')) {
         editor?.commands.setContent(cleanContent);
       } else {
-        const converted = textToScreenplayHtml(cleanContent.replace(/<[^>]*>/g, ''));
+        const converted = fountainToScreenplayHtml(cleanContent.replace(/<[^>]*>/g, ''));
         editor?.commands.setContent(converted);
       }
     } catch { addToast('Failed to load script', 'error'); }
@@ -343,7 +312,7 @@ export default function ScriptEditor() {
       let html = '';
       if (ext === 'fountain' || ext === 'txt') {
         const text = await file.text();
-        html = textToScreenplayHtml(text);
+        html = fountainToScreenplayHtml(text);
       } else if (ext === 'docx') {
         const mammoth = await import('mammoth');
         const buf = await file.arrayBuffer();
@@ -360,7 +329,7 @@ export default function ScriptEditor() {
           const t = await page.getTextContent();
           pages.push(t.items.map(item => item.str).join(' '));
         }
-        html = textToScreenplayHtml(pages.join('\n\n'));
+        html = fountainToScreenplayHtml(pages.join('\n\n'));
       } else {
         addToast('Unsupported file format. Use .fountain, .txt, .docx, or .pdf', 'error');
         return;
@@ -378,52 +347,9 @@ export default function ScriptEditor() {
     e.target.value = '';
   };
 
-  function convertHtmlToScreenplay(html) {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const blocks = [];
-    doc.querySelectorAll('p, h1, h2, h3, h4, h5, h6, div, li').forEach(el => {
-      const text = el.textContent.trim();
-      if (!text) return;
-      const type = detectElementType(text);
-      let inner = el.innerHTML.trim();
-      inner = inner
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<\/?(span|font|b|strong|i|em|u|ins|s|del|mark|sub|sup|a|code)[^>]*>/gi, (match) => {
-          const tag = match.match(/<\/?([a-z]+)/i)?.[1]?.toLowerCase();
-          if (!tag) return match;
-          if (match.startsWith('</')) return match;
-          const allowed = ['b', 'strong', 'i', 'em', 'u', 'ins', 's', 'del', 'mark', 'sub', 'sup', 'a', 'code', 'span'];
-          if (!allowed.includes(tag)) return '';
-          if (tag === 'span' || tag === 'font') {
-            const style = match.match(/style="([^"]*)"/i)?.[1] || '';
-            const color = style.match(/color\s*:\s*([^;]+)/i)?.[1];
-            const fontSize = style.match(/font-size\s*:\s*([^;]+)/i)?.[1];
-            if (color || fontSize) return match;
-            return '';
-          }
-          return match;
-        })
-        .replace(/<a\s[^>]*href="([^"]*)"[^>]*>/gi, '<a href="$1">')
-        .replace(/<a\s[^>]*>/gi, '<a>')
-        .replace(/<\/?div[^>]*>/gi, '');
-      blocks.push(`<div data-type="${type}">${inner || '&nbsp;'}</div>`);
-    });
-    return blocks.join('');
-  }
-
-  function downloadBlob(content, mimeType, filename) {
-    const blob = typeof content === 'string' ? new Blob([content], { type: mimeType }) : content;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   const handleExportFountain = () => {
     if (!contentHtml && !title) { addToast('Nothing to export', 'error'); return; }
-    const fountain = screenplayHtmlToFountain(contentHtml);
+    const fountain = screenplayToFountain(contentHtml);
     downloadBlob(fountain, 'text/plain;charset=utf-8', `${title || 'script'}.fountain`);
     addToast('Exported as .fountain');
   };

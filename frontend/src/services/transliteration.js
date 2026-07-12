@@ -9,7 +9,9 @@ function friendlyToITRANS(text) {
   w = w.replace(/oo/g, 'U');
   w = w.replace(/ii/g, 'I');
   w = w.replace(/uu/g, 'U');
-  if (/[bcdghjklmnpqrstvwxyz]$/i.test(w)) {
+  w = w.replace(/i$/g, 'I');
+  w = w.replace(/u$/g, 'U');
+  if (/[bcdfghjklmnpqrstvwxyz]$/i.test(w)) {
     w += 'a';
   }
   return w;
