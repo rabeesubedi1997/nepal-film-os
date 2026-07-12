@@ -71,14 +71,11 @@ export const ScreenplayNode = Paragraph.extend({
 
   renderHTML({ node, HTMLAttributes }) {
     const type = node.attrs.elementType;
-    const font = node.attrs.fontFamily;
-    const styleAttr = font ? `font-family: ${font}` : '';
     return ['p', {
       ...HTMLAttributes,
       class: `screenplay-element screenplay-${type}`,
       'data-element-type': type,
       'data-type': type,
-      ...(font ? { style: styleAttr } : {}),
     }, 0];
   },
 

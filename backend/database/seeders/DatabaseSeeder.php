@@ -93,7 +93,7 @@ class DatabaseSeeder extends Seeder
         // ── Modules ────────────────────────────────────────────────
         $modules = [
             'schedule', 'cast_crew', 'expenses', 'call_sheet', 'progress', 'locations',
-            'script_breakdown', 'shot_list', 'tasks', 'timesheets', 'dpr', 'documents',
+            'script', 'script_breakdown', 'shot_list', 'tasks', 'timesheets', 'dpr', 'documents',
             'messaging', 'wardrobe', 'continuity', 'storyboard', 'production_calendar',
             'day_out_of_days', 'reports', 'analytics',
         ];
