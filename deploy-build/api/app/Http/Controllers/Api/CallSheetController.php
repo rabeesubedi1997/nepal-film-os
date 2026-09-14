@@ -9,6 +9,7 @@ use App\Models\CallSheetEntry;
 use App\Models\Schedule;
 use App\Models\CastCrew;
 use App\Mail\CallSheetMail;
+use App\Services\WhatsAppService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -78,8 +79,14 @@ class CallSheetController extends Controller
                 'weather' => $validated['weather'] ?? 'Sunny/Clear',
                 'emergency_info' => $validated['emergency_info'] ?? 'Nearest Hospital: Kathmandu Medical College',
                 'special_instructions' => $validated['special_instructions'] ?? null,
-                'is_sent' => true,
-                'sent_at' => now(),
+                // Creating a call sheet is not the same as distributing
+                // it to the crew — this used to set is_sent/sent_at right
+                // here, which (a) marked every new call sheet as "sent"
+                // before anyone was actually notified, and (b) meant the
+                // SendCallSheetNotifications job's `is_sent=false AND
+                // sent_at IS NOT NULL` query could never match anything.
+                'is_sent' => false,
+                'sent_at' => null,
                 'created_by' => $request->user()->id,
             ]);
 
@@ -157,7 +164,7 @@ class CallSheetController extends Controller
         ]);
     }
 
-    public function distribute(Request $request, $filmId, $id)
+    public function distribute(Request $request, $filmId, $id, WhatsAppService $whatsapp)
     {
         $callSheet = CallSheet::with(['film', 'entries.castCrew', 'schedule', 'location'])
             ->where('film_id', $filmId)
@@ -170,20 +177,32 @@ class CallSheetController extends Controller
             ->values()
             ->toArray();
 
-        if (empty($emails)) {
-            return response()->json(['message' => 'No crew emails found.'], 400);
+        // Crew on WhatsApp (the dominant channel for this on Nepali
+        // productions) but with no email should still be notified — this
+        // used to only ever email, so the WhatsAppService existed but was
+        // never actually called from anywhere.
+        $hasWhatsappRecipient = $callSheet->entries->pluck('castCrew.whatsapp')->filter()->isNotEmpty();
+
+        if (empty($emails) && !$hasWhatsappRecipient) {
+            return response()->json(['message' => 'No crew email or WhatsApp contact found.'], 400);
         }
 
         foreach ($emails as $email) {
             Mail::to($email)->send(new CallSheetMail($callSheet));
         }
 
+        $whatsappResults = $hasWhatsappRecipient ? $whatsapp->sendCallSheet($callSheet) : [];
+
         $callSheet->update([
             'is_sent' => true,
             'sent_at' => now(),
         ]);
 
-        return response()->json(['message' => 'Call sheet distributed to ' . count($emails) . ' crew members.']);
+        $whatsappSent = collect($whatsappResults)->where('sent', true)->count();
+
+        return response()->json([
+            'message' => "Call sheet distributed: " . count($emails) . " email(s), {$whatsappSent} WhatsApp message(s) sent.",
+        ]);
     }
 
     public function exportPdf($filmId, $id)

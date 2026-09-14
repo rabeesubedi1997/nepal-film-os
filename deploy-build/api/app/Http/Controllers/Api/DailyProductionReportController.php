@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 class DailyProductionReportController extends Controller
 {
     use FilmPermissionTrait;
-    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
         $reports = DailyProductionReport::where('film_id', $filmId)
@@ -47,6 +46,17 @@ class DailyProductionReportController extends Controller
             'notes_pm' => 'nullable|string',
             'sent_to' => 'nullable|array',
         ]);
+
+        // A DPR is 1:1 with a shoot day. Without this guard, a manually
+        // created report and the nightly GenerateDPR auto-gen job could
+        // both create one for the same schedule (there's no unique DB
+        // constraint backing this).
+        $exists = DailyProductionReport::where('film_id', $filmId)
+            ->where('schedule_id', $validated['schedule_id'])
+            ->exists();
+        if ($exists) {
+            return response()->json(['message' => 'A DPR already exists for this shoot day.'], 409);
+        }
 
         $report = DailyProductionReport::create([
             'film_id' => $filmId,

@@ -10,7 +10,6 @@ use Illuminate\Http\Request;
 class TaskController extends Controller
 {
     use FilmPermissionTrait;
-    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
         $tasks = Task::where('film_id', $filmId)

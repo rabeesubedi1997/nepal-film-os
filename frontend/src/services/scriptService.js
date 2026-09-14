@@ -23,7 +23,7 @@ export const scriptService = {
   },
 
   scenes: {
-    index: (filmId) => api.get(`/films/${filmId}/scenes`),
+    index: (filmId, scriptId) => api.get(`/films/${filmId}/scenes`, { params: scriptId ? { script_id: scriptId } : {} }),
     show: (filmId, id) => api.get(`/films/${filmId}/scenes/${id}`),
     store: (filmId, data) => api.post(`/films/${filmId}/scenes`, data),
     update: (filmId, id, data) => api.put(`/films/${filmId}/scenes/${id}`, data),

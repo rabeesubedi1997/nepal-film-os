@@ -357,6 +357,42 @@ export default function SuperAdminView() {
         })}
       </div>
 
+      {/*
+        This modal used to be spliced inside the Add/Edit User form (only
+        rendered while tab === 'users'), even though it's opened from a
+        button in the Films tab — so it could never actually appear, and
+        its toggle button had no type="button" inside that <form>, risking
+        an accidental submit. It belongs at the top level: showFeaturesModal
+        / featuresFilm are independent of which tab is active.
+      */}
+      <Modal open={showFeaturesModal} onClose={() => setShowFeaturesModal(false)}
+        title={featuresFilm ? `Features: ${featuresFilm.title}` : 'Manage Features'} size="lg">
+        {featuresLoading ? (
+          <div className="flex items-center justify-center py-12"><Loader className="h-6 w-6 animate-spin text-amber-400" /></div>
+        ) : (
+          <div className="space-y-1">
+            {featuresList.map(feat => (
+              <div key={feat.module_name}
+                className="flex items-center justify-between px-4 py-3 rounded-lg bg-slate-800/40 border border-slate-700/50 hover:border-slate-600/50 transition-all">
+                <div>
+                  <p className="text-sm font-medium text-slate-200 capitalize">
+                    {feat.module_name.replace(/_/g, ' ')}
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">{feat.module_name}</p>
+                </div>
+                <button type="button" onClick={() => toggleFeature(feat.module_name, feat.is_enabled)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all shrink-0 ${feat.is_enabled ? 'bg-emerald-500' : 'bg-slate-700'}`}>
+                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${feat.is_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                </button>
+              </div>
+            ))}
+            {featuresList.length === 0 && (
+              <p className="text-center text-sm text-slate-500 py-8">No features available.</p>
+            )}
+          </div>
+        )}
+      </Modal>
+
       {tab === 'overview' && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
@@ -476,37 +512,9 @@ export default function SuperAdminView() {
                     </select>
                     {userForm.film_id && <FilmRoleDropdown filmId={userForm.film_id} value={userForm.role_id} onChange={v => setUserForm(f => ({ ...f, role_id: v }))} />}
                     <Input label="Department (optional)" value={userForm.department} onChange={e => setUserForm(f => ({ ...f, department: e.target.value }))} name="department" placeholder="e.g., Production" />
-          </div>
-
-          <Modal open={showFeaturesModal} onClose={() => setShowFeaturesModal(false)}
-            title={featuresFilm ? `Features: ${featuresFilm.title}` : 'Manage Features'} size="lg">
-            {featuresLoading ? (
-              <div className="flex items-center justify-center py-12"><Loader className="h-6 w-6 animate-spin text-amber-400" /></div>
-            ) : (
-              <div className="space-y-1">
-                {featuresList.map(feat => (
-                  <div key={feat.module_name}
-                    className="flex items-center justify-between px-4 py-3 rounded-lg bg-slate-800/40 border border-slate-700/50 hover:border-slate-600/50 transition-all">
-                    <div>
-                      <p className="text-sm font-medium text-slate-200 capitalize">
-                        {feat.module_name.replace(/_/g, ' ')}
-                      </p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{feat.module_name}</p>
-                    </div>
-                    <button onClick={() => toggleFeature(feat.module_name, feat.is_enabled)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all shrink-0 ${feat.is_enabled ? 'bg-emerald-500' : 'bg-slate-700'}`}>
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${feat.is_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
                   </div>
-                ))}
-                {featuresList.length === 0 && (
-                  <p className="text-center text-sm text-slate-500 py-8">No features available.</p>
-                )}
-              </div>
-            )}
-          </Modal>
-        </div>
-      )}
+                </div>
+              )}
               <div className="flex justify-end gap-3 pt-2">
                 <Button variant="secondary" onClick={() => setShowUserModal(false)}>Cancel</Button>
                 <Button variant="primary" type="submit" disabled={savingUser}>

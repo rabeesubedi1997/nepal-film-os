@@ -8,7 +8,10 @@ import Pagination from '../components/Pagination';
 
 const shotTypeOptions = ['Close-up', 'Medium', 'Wide', 'Extreme Close-up', 'Cowboy', 'Two-shot', 'Over-the-shoulder', 'Insert', 'Establishing', 'POV'];
 const angleOptions = ['Eye Level', 'High Angle', 'Low Angle', 'Dutch Angle', 'Bird\'s-eye', 'Worm\'s-eye', 'Overhead'];
-const lensOptions = ['Prime 24mm', 'Prime 35mm', 'Prime 50mm', 'Prime 85mm', 'Prime 100mm', 'Zoom 24-70mm', 'Zoom 70-200mm', 'Wide 16mm', 'Fisheye', 'Macro'];
+// Common prime/zoom focal lengths, in mm — the backend stores lens_mm as a
+// single integer, so presets like "Fisheye"/"Macro"/"Zoom 24-70mm" (a
+// range, not one number) can't round-trip. 0 is used for "N/A".
+const lensMmOptions = [16, 24, 35, 50, 85, 100, 135, 200];
 const movementOptions = ['Static', 'Pan', 'Tilt', 'Dolly In', 'Dolly Out', 'Tracking', 'Crane', 'Handheld', 'Steadicam', 'Zoom', 'Whip Pan'];
 
 const statusBadgeMap = { 'Not Started': 'slate', 'Ready': 'blue', 'Completed': 'green', 'B-Roll': 'purple' };
@@ -63,7 +66,7 @@ export default function ShotListView() {
 
   const openCreate = (sceneId) => {
     setEditShot(null);
-    setFormData({ scene_id: sceneId || '', shot_number: shots.length + 1, shot_type: 'Medium', angle: 'Eye Level', lens: 'Prime 50mm', movement: 'Static', description: '', duration_seconds: '5', storyboard_url: '', status: 'Not Started' });
+    setFormData({ scene_id: sceneId || '', shot_number: shots.length + 1, shot_type: 'Medium', camera_angle: 'Eye Level', lens_mm: '50', movement: 'Static', description: '', duration_seconds: '5', storyboard_image: '', status: 'Not Started' });
     setShowModal(true);
   };
 
@@ -73,12 +76,12 @@ export default function ShotListView() {
       scene_id: s.scene_id || '',
       shot_number: s.shot_number || '',
       shot_type: s.shot_type || 'Medium',
-      angle: s.angle || 'Eye Level',
-      lens: s.lens || 'Prime 50mm',
+      camera_angle: s.camera_angle || 'Eye Level',
+      lens_mm: s.lens_mm != null ? String(s.lens_mm) : '',
       movement: s.movement || 'Static',
       description: s.description || '',
       duration_seconds: String(s.duration_seconds || 5),
-      storyboard_url: s.storyboard_url || '',
+      storyboard_image: s.storyboard_image || '',
       status: s.status || 'Not Started',
     });
     setShowModal(true);
@@ -87,7 +90,7 @@ export default function ShotListView() {
   const save = async (e) => {
     e.preventDefault();
     try {
-      const data = { ...formData, duration_seconds: parseInt(formData.duration_seconds) || 5 };
+      const data = { ...formData, duration_seconds: parseInt(formData.duration_seconds) || 5, lens_mm: formData.lens_mm ? parseInt(formData.lens_mm) : null };
       if (editShot) {
         await shotListService.update(filmId, editShot.id, data);
       } else {
@@ -196,15 +199,15 @@ export default function ShotListView() {
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-[10px] font-semibold bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20">{shot.shot_type}</span>
                           <span className="text-[10px] text-slate-500 flex items-center gap-0.5"><Move className="h-3 w-3" /> {shot.movement}</span>
-                          <span className="text-[10px] text-slate-500 flex items-center gap-0.5"><Target className="h-3 w-3" /> {shot.angle}</span>
-                          <span className="text-[10px] text-slate-500 flex items-center gap-0.5"><ZoomIn className="h-3 w-3" /> {shot.lens}</span>
+                          <span className="text-[10px] text-slate-500 flex items-center gap-0.5"><Target className="h-3 w-3" /> {shot.camera_angle}</span>
+                          {shot.lens_mm != null && <span className="text-[10px] text-slate-500 flex items-center gap-0.5"><ZoomIn className="h-3 w-3" /> {shot.lens_mm}mm</span>}
                           {shot.duration_seconds && <span className="text-[10px] text-slate-500">{shot.duration_seconds}s</span>}
                         </div>
                         {shot.description && <p className="text-xs text-slate-500 flex-1 min-w-0 truncate hidden sm:block">{shot.description}</p>}
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        {shot.storyboard_url && (
-                          <a href={shot.storyboard_url} target="_blank" rel="noreferrer" className="p-1.5 text-slate-500 hover:text-blue-400 rounded-lg transition-colors" title="View storyboard">
+                        {shot.storyboard_image && (
+                          <a href={shot.storyboard_image} target="_blank" rel="noreferrer" className="p-1.5 text-slate-500 hover:text-blue-400 rounded-lg transition-colors" title="View storyboard">
                             <Image className="h-3.5 w-3.5" />
                           </a>
                         )}
@@ -241,10 +244,11 @@ export default function ShotListView() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label="Shot Type" value={formData.shot_type} onChange={handleInput} name="shot_type" options={shotTypeOptions} />
-            <Input label="Camera Angle" value={formData.angle} onChange={handleInput} name="angle" options={angleOptions} />
+            <Input label="Camera Angle" value={formData.camera_angle} onChange={handleInput} name="camera_angle" options={angleOptions} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Lens" value={formData.lens} onChange={handleInput} name="lens" options={lensOptions} />
+            <Input label="Lens (mm)" value={formData.lens_mm} onChange={handleInput} name="lens_mm" type="number"
+              options={lensMmOptions.map(mm => ({ value: String(mm), label: `${mm}mm` }))} />
             <Input label="Movement" value={formData.movement} onChange={handleInput} name="movement" options={movementOptions} />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -252,7 +256,7 @@ export default function ShotListView() {
             <Input label="Status" value={formData.status} onChange={handleInput} name="status" options={Object.keys(statusBadgeMap)} />
           </div>
           <Input label="Description" value={formData.description} onChange={handleInput} name="description" placeholder="What happens in this shot..." />
-          <Input label="Storyboard Image URL" value={formData.storyboard_url} onChange={handleInput} name="storyboard_url" placeholder="https://example.com/storyboard.jpg" />
+          <Input label="Storyboard Image URL" value={formData.storyboard_image} onChange={handleInput} name="storyboard_image" placeholder="https://example.com/storyboard.jpg" />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
             <Button variant="primary" type="submit">{editShot ? 'Update' : 'Create'} Shot</Button>

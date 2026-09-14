@@ -35,7 +35,11 @@ export default function AcceptInvitation() {
       useAuthStore.getState().setToken(authToken);
       useAuthStore.setState({ user });
       await fetchFilms();
-      navigate('/app/dashboard');
+      // Show the "Password Set!" confirmation briefly before redirecting —
+      // this state existed and rendered a whole screen for it, but nothing
+      // ever set it, so it could never actually appear.
+      setSuccess(true);
+      setTimeout(() => navigate('/app/dashboard'), 1200);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to accept invitation. The link may be expired.');
     } finally {

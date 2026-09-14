@@ -68,12 +68,19 @@ HTML;
         $html = $request->input('html');
         $title = $request->input('title', 'Screenplay');
 
-        // Simple DOCX generation - returns HTML that Word can open
+        // This is HTML with Word's own namespaces (Word has understood
+        // this "HTML as a Word document" format since Office 2000) — not
+        // real OOXML. Previously it was served as .docx with the OOXML
+        // (zip-based) mimetype, which made Word report the file as
+        // corrupted because the bytes aren't actually a zip archive.
+        // Serving it as .doc with the legacy application/msword type is
+        // exactly the format it actually is, and Word opens it cleanly.
+        // A true .docx would need PhpOffice/PhpWord to build real OOXML.
         $docxHTML = $this->wrapForDOCX($html, $title);
 
         return response($docxHTML, 200, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'Content-Disposition' => 'attachment; filename="' . $title . '.docx"',
+            'Content-Type' => 'application/msword',
+            'Content-Disposition' => 'attachment; filename="' . $title . '.doc"',
         ]);
     }
 

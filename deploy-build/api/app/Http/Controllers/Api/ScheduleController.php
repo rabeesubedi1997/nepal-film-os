@@ -79,7 +79,7 @@ class ScheduleController extends Controller
             'scene_heading' => 'required|string',
             'int_ext' => 'nullable|string|in:INT,EXT,INT/EXT',
             'location_id' => 'nullable|integer|exists:locations,id',
-            'day_or_night' => 'nullable|string|in:DAY,NIGHT,DAWN,DUS',
+            'day_or_night' => 'nullable|string|in:DAY,NIGHT,DAWN,DUSK',
             'page_count' => 'nullable|numeric',
             'summary' => 'nullable|string',
             'status' => 'nullable|string',

@@ -378,19 +378,18 @@ export default function ScriptEditor() {
     addToast('Exported as .html');
   };
 
-  const handleExportDocx = async () => {
+  const handleExportDocx = () => {
+    // mammoth only converts DOCX -> HTML, not the reverse — calling it
+    // here with { html } silently produced garbage. Word has natively
+    // understood "HTML tagged with its own XML namespaces" as a .doc
+    // file since Office 2000, so build that directly instead of trying
+    // to generate real OOXML client-side (the backend export/docx route
+    // does the equivalent server-side, correctly, as of this fix too).
     if (!contentHtml && !title) { addToast('Nothing to export', 'error'); return; }
-    try {
-      const mammoth = await import('mammoth');
-      const tpHtml = titlePageData ? buildTitlePageHtml(titlePageData) : '';
-      const fullHtml = `<html><body>${tpHtml}${contentHtml}</body></html>`;
-      const result = await mammoth.convertToHtml({ html: fullHtml });
-      const blob = new Blob([result.value], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-      downloadBlob(blob, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', `${title || 'script'}.docx`);
-      addToast('Exported as .docx');
-    } catch {
-      addToast('DOCX export failed', 'error');
-    }
+    const tpHtml = titlePageData ? buildTitlePageHtml(titlePageData) : '';
+    const fullHtml = `<!DOCTYPE html><html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset="utf-8"><title>${title || 'Script'}</title></head><body>${tpHtml}${contentHtml}</body></html>`;
+    downloadBlob(fullHtml, 'application/msword', `${title || 'script'}.doc`);
+    addToast('Exported as .doc');
   };
 
   const handlePrintPdf = () => {
@@ -410,20 +409,32 @@ export default function ScriptEditor() {
       const script = res.data;
       const content = script.content || '';
       const tpWrapped = titlePageData ? wrapTitlePage(titlePageData) : '';
+      // This is a raw fetch() (not the shared `api` axios instance) so it
+      // never carried the Bearer token — every server export 401'd since
+      // the whole API requires auth:sanctum. Attach it manually.
+      const token = localStorage.getItem('nepal_film_token');
       const response = await fetch(`/api/films/${filmId}/scripts/${activeId}/export/${format}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ html: tpWrapped + content, title: script.title || 'Screenplay' }),
       });
       if (!response.ok) throw new Error('Export failed');
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
+      // The blob URL carries no Content-Disposition, so the extension
+      // here (not the server's filename) is what the browser saves —
+      // 'docx' now actually returns Word-flavoured HTML served as .doc
+      // (see ScreenplayExportController::exportDOCX).
+      const extension = format === 'docx' ? 'doc' : format;
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${script.title || 'screenplay'}.${format}`;
+      a.download = `${script.title || 'screenplay'}.${extension}`;
       a.click();
       URL.revokeObjectURL(url);
-      addToast(`Exported as .${format}`);
+      addToast(`Exported as .${extension}`);
     } catch { addToast(`Server export failed`, 'error'); }
   };
 
@@ -436,7 +447,7 @@ export default function ScriptEditor() {
     if (!filmId) return;
     setScenesLoading(true);
     try {
-      const res = await scriptService.scenes.index(filmId);
+      const res = await scriptService.scenes.index(filmId, activeId);
       setScenes(res.data || []);
     } catch { /* ignore */ }
     setScenesLoading(false);

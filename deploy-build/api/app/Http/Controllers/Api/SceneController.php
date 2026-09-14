@@ -16,7 +16,16 @@ class SceneController extends Controller
     use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
-        $scenes = Scene::where('film_id', $filmId)
+        $query = Scene::where('film_id', $filmId);
+
+        // Optional: scope to one script. Without this, a film with more
+        // than one script (e.g. multiple drafts/episodes) mixed all of
+        // their scenes together in every Scenes panel / scene picker.
+        if ($request->filled('script_id')) {
+            $query->where('script_id', $request->input('script_id'));
+        }
+
+        $scenes = $query
             ->with('location:id,name')
             ->orderBy('order_index')
             ->orderBy('scene_number')
@@ -89,6 +98,7 @@ class SceneController extends Controller
 
     public function autoExtract(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'scene.edit');
         $validated = $request->validate([
             'script_id' => 'required|exists:scripts,id',
         ]);
@@ -104,9 +114,17 @@ class SceneController extends Controller
 
         $locations = Location::where('film_id', $filmId)->get();
 
-        $created = [];
-        DB::transaction(function () use ($filmId, $script, $parsedScenes, $locations, &$created) {
-            Scene::where('film_id', $filmId)->where('script_id', $script->id)->delete();
+        // Reconcile by scene_number instead of delete-all-recreate — see
+        // the same fix in ScriptController::autoExtract for why: scenes
+        // with breakdown/shot-list rows attached must keep their id.
+        $result = [];
+        DB::transaction(function () use ($filmId, $script, $parsedScenes, $locations, &$result) {
+            $existingScenes = Scene::where('film_id', $filmId)
+                ->where('script_id', $script->id)
+                ->get()
+                ->keyBy(fn ($scene) => (string) $scene->scene_number);
+
+            $seenSceneNumbers = [];
 
             foreach ($parsedScenes as $i => $ps) {
                 $locationId = null;
@@ -119,30 +137,45 @@ class SceneController extends Controller
                     $locationId = $match?->id;
                 }
 
-                $scene = Scene::create([
-                    'film_id' => $filmId,
-                    'script_id' => $script->id,
-                    'scene_number' => $ps['scene_number'],
+                $key = (string) $ps['scene_number'];
+                $seenSceneNumbers[] = $key;
+
+                $attrs = [
                     'scene_heading' => $ps['scene_heading'],
                     'int_ext' => $ps['int_ext'],
                     'day_or_night' => $ps['day_or_night'],
                     'location_id' => $locationId,
                     'order_index' => $i,
                     'page_count' => $ps['page_count'],
-                    'status' => 'Not Started',
-                ]);
-                $created[] = $scene;
+                ];
+
+                if ($existingScenes->has($key)) {
+                    $existingScenes->get($key)->update($attrs);
+                    $result[] = $existingScenes->get($key);
+                } else {
+                    $result[] = Scene::create(array_merge($attrs, [
+                        'film_id' => $filmId,
+                        'script_id' => $script->id,
+                        'scene_number' => $ps['scene_number'],
+                        'status' => 'Not Started',
+                    ]));
+                }
             }
+
+            $existingScenes
+                ->reject(fn ($scene, $key) => in_array($key, $seenSceneNumbers, true))
+                ->each(fn ($scene) => $scene->delete());
         });
 
         return response()->json([
-            'message' => count($created) . ' scenes extracted.',
-            'scenes' => $created,
+            'message' => count($result) . ' scenes extracted.',
+            'scenes' => $result,
         ]);
     }
 
     public function reorder(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'scene.edit');
         $validated = $request->validate([
             'order' => 'required|array',
             'order.*.id' => 'required|integer|exists:scenes,id',
@@ -158,6 +191,7 @@ class SceneController extends Controller
 
     public function splitScene(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'scene.edit');
         $scene = Scene::where('film_id', $filmId)->findOrFail($id);
 
         $validated = $request->validate([

@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { CheckSquare, Plus, Edit3, Trash2, Calendar, User, AlertTriangle, Clock, Flag } from 'lucide-react';
 import { taskService } from '../services/taskService';
+import { filmService } from '../services/filmService';
 import { useAuthStore } from '../authStore';
 import { Modal, Input, Badge, Button } from '../components/ui';
 import { useToastStore } from '../toastStore';
 import Pagination from '../components/Pagination';
 
-const priorityBadgeMap = { low: 'slate', medium: 'blue', high: 'amber', urgent: 'red' };
-const priorityLabelMap = { low: 'Low', medium: 'Medium', high: 'High', urgent: 'Urgent' };
+// Must match the backend's validation exactly (TaskController: 'in:Low,Medium,High,Urgent').
+// This used to be lowercase here while the backend required capitalized values, so every
+// task create/edit failed validation (422) — the whole module's write path was dead.
+const PRIORITIES = ['Low', 'Medium', 'High', 'Urgent'];
+const priorityBadgeMap = { Low: 'slate', Medium: 'blue', High: 'amber', Urgent: 'red' };
+const priorityLabelMap = { Low: 'Low', Medium: 'Medium', High: 'High', Urgent: 'Urgent' };
 
 const statusColumns = [
   { key: 'todo', label: 'To Do', color: 'border-t-slate-600' },
@@ -21,6 +26,7 @@ export default function TaskView() {
   const filmId = currentFilm?.id;
 
   const [tasks, setTasks] = useState([]);
+  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editTask, setEditTask] = useState(null);
@@ -50,10 +56,15 @@ export default function TaskView() {
     if (!filmId) return;
     try {
       setLoading(true);
-      const data = await taskService.index(filmId);
+      const [data, memberRes] = await Promise.all([
+        taskService.index(filmId),
+        filmService.getMembers(filmId).catch(() => ({ data: [] })),
+      ]);
       setTasks(data.tasks || data || []);
+      setMembers(memberRes.data || []);
     } catch (err) {
       console.error('Failed to load tasks:', err);
+      addToast('Failed to load tasks', 'error');
     } finally {
       setLoading(false);
     }
@@ -65,7 +76,7 @@ export default function TaskView() {
 
   const openCreate = () => {
     setEditTask(null);
-    setFormData({ title: '', description: '', assignee: '', due_date: '', priority: 'medium', status: 'todo' });
+    setFormData({ title: '', description: '', assigned_to: '', due_date: '', priority: 'Medium', status: 'todo' });
     setShowModal(true);
   };
 
@@ -74,9 +85,9 @@ export default function TaskView() {
     setFormData({
       title: t.title || '',
       description: t.description || '',
-      assignee: t.assignee || '',
+      assigned_to: t.assigned_to ? String(t.assigned_to) : '',
       due_date: t.due_date?.split('T')[0] || '',
-      priority: t.priority || 'medium',
+      priority: t.priority || 'Medium',
       status: t.status || 'todo',
     });
     setShowModal(true);
@@ -85,10 +96,11 @@ export default function TaskView() {
   const save = async (e) => {
     e.preventDefault();
     try {
+      const payload = { ...formData, assigned_to: formData.assigned_to ? Number(formData.assigned_to) : null };
       if (editTask) {
-        await taskService.update(filmId, editTask.id, formData);
+        await taskService.update(filmId, editTask.id, payload);
       } else {
-        await taskService.store(filmId, formData);
+        await taskService.store(filmId, payload);
       }
       setShowModal(false);
       fetchData();
@@ -111,7 +123,7 @@ export default function TaskView() {
 
   const getTasksByStatus = (status) => tasks.filter(t => t.status === status);
 
-  const highPriorityCount = tasks.filter(t => t.priority === 'high' || t.priority === 'urgent').length;
+  const highPriorityCount = tasks.filter(t => t.priority === 'High' || t.priority === 'Urgent').length;
   const overdueCount = tasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && t.status !== 'done').length;
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin h-6 w-6 border-2 border-amber-500 border-t-transparent rounded-full" /></div>;
@@ -189,9 +201,9 @@ export default function TaskView() {
                     {task.description && <p className="text-xs text-slate-500 mt-1 line-clamp-2">{task.description}</p>}
                     <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <Badge color={priorityBadgeMap[task.priority] || 'slate'}><Flag className="h-2.5 w-2.5" /> {priorityLabelMap[task.priority] || 'Medium'}</Badge>
-                      {task.assignee && (
+                      {task.assignedTo?.name && (
                         <span className="text-[10px] text-slate-500 flex items-center gap-1">
-                          <User className="h-3 w-3" /> {task.assignee}
+                          <User className="h-3 w-3" /> {task.assignedTo.name}
                         </span>
                       )}
                       {task.due_date && (
@@ -201,7 +213,11 @@ export default function TaskView() {
                         </span>
                       )}
                     </div>
-                    {col.key !== 'done' && (
+                    {(
+                      // Buttons are the only way to change status on touch devices —
+                      // drag-and-drop uses HTML5 DnD, which doesn't work on phones.
+                      // The Done column previously had no buttons at all, so on-set
+                      // (mobile) users had no way to un-complete a task.
                       <div className="mt-2 pt-2 border-t border-slate-700/50 flex gap-1">
                         {col.key === 'todo' && (
                           <button onClick={() => updateStatus(task.id, 'in_progress')} className="text-[10px] text-blue-400 hover:text-blue-300 font-semibold">Start</button>
@@ -211,6 +227,9 @@ export default function TaskView() {
                             <button onClick={() => updateStatus(task.id, 'done')} className="text-[10px] text-emerald-400 hover:text-emerald-300 font-semibold">Complete</button>
                             <button onClick={() => updateStatus(task.id, 'todo')} className="text-[10px] text-slate-500 hover:text-slate-400 font-semibold">Move back</button>
                           </>
+                        )}
+                        {col.key === 'done' && (
+                          <button onClick={() => updateStatus(task.id, 'in_progress')} className="text-[10px] text-slate-500 hover:text-slate-400 font-semibold">Reopen</button>
                         )}
                       </div>
                     )}
@@ -227,11 +246,12 @@ export default function TaskView() {
           <Input label="Title" value={formData.title} onChange={handleInput} name="title" required placeholder="e.g., Book location permit" />
           <Input label="Description" value={formData.description} onChange={handleInput} name="description" placeholder="Detailed task description..." />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Assignee" value={formData.assignee} onChange={handleInput} name="assignee" placeholder="Person responsible" />
+            <Input label="Assigned To" value={formData.assigned_to} onChange={handleInput} name="assigned_to"
+              options={[{ value: '', label: 'Unassigned' }, ...members.map(m => ({ value: String(m.user_id), label: m.name }))]} />
             <Input label="Due Date" type="date" value={formData.due_date} onChange={handleInput} name="due_date" />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Priority" value={formData.priority} onChange={handleInput} name="priority" options={['low', 'medium', 'high', 'urgent']} />
+            <Input label="Priority" value={formData.priority} onChange={handleInput} name="priority" options={PRIORITIES} />
             <Input label="Status" value={formData.status} onChange={handleInput} name="status" options={['todo', 'in_progress', 'done']} />
           </div>
           <div className="flex justify-end gap-3 pt-2">
