@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 class MessageController extends Controller
 {
     use FilmPermissionTrait;
-    use FilmPermissionTrait;
+
     public function index(Request $request, $filmId)
     {
         $userId = $request->user()->id;
@@ -31,7 +31,19 @@ class MessageController extends Controller
 
     public function show(Request $request, $filmId, $id)
     {
+        $userId = $request->user()->id;
+
+        // Same visibility rule as index(): a message is visible only to
+        // its sender, its addressed receiver, or everyone if it's a
+        // broadcast/announcement (no receiver_id). Previously this had no
+        // filter at all, so any film member could read any private
+        // message by guessing its (sequential) id.
         $message = Message::where('film_id', $filmId)
+            ->where(function ($q) use ($userId) {
+                $q->where('receiver_id', $userId)
+                  ->orWhereNull('receiver_id')
+                  ->orWhere('sender_id', $userId);
+            })
             ->with(['sender', 'receiver', 'reads.user'])
             ->findOrFail($id);
 
@@ -81,7 +93,15 @@ class MessageController extends Controller
 
     public function markRead(Request $request, $filmId, $id)
     {
-        $message = Message::where('film_id', $filmId)->findOrFail($id);
+        $userId = $request->user()->id;
+
+        // Only a message actually addressed to this user (or a
+        // broadcast/announcement) can be marked read by them.
+        $message = Message::where('film_id', $filmId)
+            ->where(function ($q) use ($userId) {
+                $q->where('receiver_id', $userId)->orWhereNull('receiver_id');
+            })
+            ->findOrFail($id);
 
         MessageRead::firstOrCreate([
             'message_id' => $message->id,

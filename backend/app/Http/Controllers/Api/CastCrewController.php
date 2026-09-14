@@ -15,6 +15,7 @@ class CastCrewController extends Controller
      */
     public function index(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'cast_crew.view');
         $members = CastCrew::where('film_id', $filmId)
             ->with('user')
             ->orderBy('role_type', 'asc')
@@ -42,7 +43,7 @@ class CastCrewController extends Controller
             'emergency_contact_name' => 'nullable|string|max:255',
             'emergency_contact_phone' => 'nullable|string|max:20',
             'contract_status' => 'nullable|string|in:Pending,Signed,Rejected',
-            'day_rates' => 'nullable|numeric',
+            'day_rates' => 'nullable|numeric|min:0',
         ]);
 
         $member = CastCrew::create([
@@ -85,7 +86,7 @@ class CastCrewController extends Controller
             'emergency_contact_name' => 'nullable|string|max:255',
             'emergency_contact_phone' => 'nullable|string|max:20',
             'contract_status' => 'nullable|string|in:Pending,Signed,Rejected',
-            'day_rates' => 'nullable|numeric',
+            'day_rates' => 'nullable|numeric|min:0',
         ]);
 
         $member->update($validated);

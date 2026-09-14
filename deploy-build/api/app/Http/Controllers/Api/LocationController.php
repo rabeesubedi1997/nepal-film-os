@@ -12,6 +12,7 @@ class LocationController extends Controller
     use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'location.view');
         $locations = Location::where('film_id', $filmId)->get();
 
         return response()->json($locations);
@@ -54,6 +55,7 @@ class LocationController extends Controller
 
     public function show(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'location.view');
         $location = Location::where('film_id', $filmId)->findOrFail($id);
 
         return response()->json($location);

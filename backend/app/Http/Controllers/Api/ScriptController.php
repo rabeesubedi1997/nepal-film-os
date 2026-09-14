@@ -192,6 +192,23 @@ class ScriptController extends Controller
         return response()->json(['message' => 'Draft archived']);
     }
 
+    /**
+     * Reconcile scenes parsed from the script content against the scenes
+     * already stored for this script, in place.
+     *
+     * IMPORTANT: this must never blanket-delete-and-recreate scenes. Script
+     * Breakdown items and Shot List entries have `scene_id` foreign keys
+     * that cascade-delete when their scene is removed, and this runs on
+     * every script save (ScriptEditor always saves with auto_extract
+     * defaulting to true). Recreating scenes with fresh IDs on every save
+     * silently destroyed all breakdown/shot-list data tied to those scenes.
+     *
+     * Instead: match parsed scenes to existing scenes by scene_number and
+     * update in place (preserving the scene's id, and therefore any
+     * breakdown/shot-list rows attached to it). Only scenes whose number
+     * no longer appears at all in the new parse are deleted; only scene
+     * numbers that are genuinely new are created.
+     */
     private function autoExtract(Script $script)
     {
         if (empty($script->content)) return;
@@ -208,9 +225,12 @@ class ScriptController extends Controller
         $locations = Location::where('film_id', $script->film_id)->get();
 
         DB::transaction(function () use ($script, $parsedScenes, $locations) {
-            Scene::where('film_id', $script->film_id)
+            $existingScenes = Scene::where('film_id', $script->film_id)
                 ->where('script_id', $script->id)
-                ->delete();
+                ->get()
+                ->keyBy(fn ($scene) => (string) $scene->scene_number);
+
+            $seenSceneNumbers = [];
 
             foreach ($parsedScenes as $i => $ps) {
                 $locationId = null;
@@ -223,19 +243,40 @@ class ScriptController extends Controller
                     $locationId = $match?->id;
                 }
 
-                Scene::create([
-                    'film_id' => $script->film_id,
-                    'script_id' => $script->id,
-                    'scene_number' => $ps['scene_number'],
+                $key = (string) $ps['scene_number'];
+                $seenSceneNumbers[] = $key;
+
+                $attrs = [
                     'scene_heading' => $ps['scene_heading'],
                     'int_ext' => $ps['int_ext'],
                     'day_or_night' => $ps['day_or_night'],
                     'location_id' => $locationId,
                     'order_index' => $i,
                     'page_count' => $ps['page_count'],
-                    'status' => 'Not Started',
-                ]);
+                ];
+
+                if ($existingScenes->has($key)) {
+                    // Preserve the scene id (and everything keyed off it —
+                    // breakdown items, shot list entries) — just refresh
+                    // the fields the script re-parse can tell us about.
+                    $existingScenes->get($key)->update($attrs);
+                } else {
+                    Scene::create(array_merge($attrs, [
+                        'film_id' => $script->film_id,
+                        'script_id' => $script->id,
+                        'scene_number' => $ps['scene_number'],
+                        'status' => 'Not Started',
+                    ]));
+                }
             }
+
+            // Only delete scenes that genuinely no longer exist in the
+            // script — this still cascades their breakdown/shot-list rows,
+            // which is correct (the scene itself is gone), but it no
+            // longer happens for every scene on every save.
+            $existingScenes
+                ->reject(fn ($scene, $key) => in_array($key, $seenSceneNumbers, true))
+                ->each(fn ($scene) => $scene->delete());
         });
     }
 }

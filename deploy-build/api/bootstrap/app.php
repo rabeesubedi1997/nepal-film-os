@@ -9,8 +9,15 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
-        channels: __DIR__.'/../routes/channels.php',
         health: '/up',
+    )
+    // Registered separately (instead of via withRouting's `channels:`
+    // param) so the broadcasting auth route uses 'auth:sanctum' instead
+    // of the default 'web' session-cookie middleware — this SPA is
+    // pure Bearer-token auth and has no session to authenticate with.
+    ->withBroadcasting(
+        __DIR__.'/../routes/channels.php',
+        ['middleware' => ['auth:sanctum']],
     )
     ->withCommands([
         \App\Console\Commands\RepairFilmRoles::class,

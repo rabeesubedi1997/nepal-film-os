@@ -5,6 +5,7 @@ namespace App\Events;
 use App\Models\Script;
 use App\Models\User;
 use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -32,8 +33,13 @@ class ScriptUpdated implements ShouldBroadcast
 
     public function broadcastOn(): array
     {
+        // Private, not public: this carries full screenplay text. The
+        // authorization rule in routes/channels.php only runs for
+        // private/presence channels — on a public Channel it was never
+        // invoked at all, so any client could subscribe to any film's
+        // script feed.
         return [
-            new Channel('scripts.' . $this->filmId),
+            new PrivateChannel('scripts.' . $this->filmId),
         ];
     }
 }

@@ -41,7 +41,11 @@ class MediaController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'file' => 'required|file|mimes:jpg,jpeg,png,gif,webp,svg,mp4,mov,avi,mkv,mp3,wav,ogg,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,csv|max:102400',
+            // 'svg' intentionally excluded: SVG files can embed <script>,
+            // and uploads here are served directly from the public disk
+            // (same-origin) — an uploaded SVG opened in a new tab would
+            // execute as a stored XSS against whoever opens it.
+            'file' => 'required|file|mimes:jpg,jpeg,png,gif,webp,mp4,mov,avi,mkv,mp3,wav,ogg,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,csv|max:102400',
         ]);
 
         $file = $request->file('file');

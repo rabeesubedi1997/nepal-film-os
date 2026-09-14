@@ -13,6 +13,7 @@ class TimeSheetController extends Controller
     use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'timesheet.view');
         $sheets = TimeSheet::where('film_id', $filmId)
             ->with(['user', 'approver'])
             ->orderBy('shoot_date', 'desc')
@@ -23,6 +24,7 @@ class TimeSheetController extends Controller
 
     public function show(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'timesheet.view');
         $sheet = TimeSheet::where('film_id', $filmId)
             ->with(['user', 'approver'])
             ->findOrFail($id);

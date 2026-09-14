@@ -219,7 +219,8 @@ export default function ScriptEditor() {
 
   useEffect(() => {
     if (!filmId) return;
-    const channel = echo.channel(`scripts.${filmId}`);
+    const channelName = `scripts.${filmId}`;
+    const channel = echo.private(channelName);
     channel.listen('.ScriptUpdated', (e) => {
       if (e.scriptId === activeId && !dirty) {
         setTitle(e.title);
@@ -231,10 +232,18 @@ export default function ScriptEditor() {
         return [...prev, { name: e.userName, action: e.action }];
       });
       addToast(`${e.userName} ${e.action} "${e.title}"`);
-      setTimeout(() => setCollaborators([]), 5000);
+      // Remove only this collaborator's badge after 5s, not everyone's —
+      // otherwise one person's timer wiped out a badge that arrived a
+      // second earlier from someone else.
+      setTimeout(() => {
+        setCollaborators(prev => prev.filter(c => c.name !== e.userName));
+      }, 5000);
       fetchScripts();
     });
-    return () => { channel.stopListening('.ScriptUpdated'); };
+    return () => {
+      channel.stopListening('.ScriptUpdated');
+      echo.leave(channelName);
+    };
   }, [filmId, activeId, dirty]);
 
   const contentHtml = editor?.getHTML() || '';

@@ -41,7 +41,7 @@ class ExpenseController extends Controller
         $validated = $request->validate([
             'department_id' => 'required|string',
             'category' => 'required|string',
-            'amount' => 'required|numeric',
+            'amount' => 'required|numeric|min:0.01',
             'currency' => 'nullable|string',
             'description' => 'nullable|string',
             'date' => 'required|date',
@@ -79,7 +79,7 @@ class ExpenseController extends Controller
         $validated = $request->validate([
             'department_id' => 'required|string',
             'category' => 'required|string',
-            'budgeted_amount' => 'required|numeric',
+            'budgeted_amount' => 'required|numeric|min:0',
             'currency' => 'nullable|string',
         ]);
 
@@ -123,7 +123,7 @@ class ExpenseController extends Controller
         $validated = $request->validate([
             'department_id' => 'nullable|string',
             'category' => 'nullable|string',
-            'amount' => 'nullable|numeric',
+            'amount' => 'nullable|numeric|min:0.01',
             'currency' => 'nullable|string',
             'description' => 'nullable|string',
             'date' => 'nullable|date',

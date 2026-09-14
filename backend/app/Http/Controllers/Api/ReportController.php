@@ -23,7 +23,8 @@ class ReportController extends Controller
         $completedScenes = Scene::where('film_id', $filmId)->where('status', 'Completed')->count();
         $totalCastCrew = CastCrew::where('film_id', $filmId)->count();
         $totalCallSheets = CallSheet::where('film_id', $filmId)->count();
-        $totalBudget = Expense::where('film_id', $filmId)->sum('amount');
+        // Only Approved/Paid expenses count as "spent" (see Expense::COUNTED_STATUSES).
+        $totalExpenses = Expense::where('film_id', $filmId)->counted()->sum('amount');
 
         return response()->json([
             'total_shoot_days' => $totalShootDays,
@@ -34,7 +35,7 @@ class ReportController extends Controller
             'scene_completion' => $totalScenes > 0 ? round(($completedScenes / $totalScenes) * 100) : 0,
             'total_cast_crew' => $totalCastCrew,
             'total_call_sheets' => $totalCallSheets,
-            'total_expenses' => round($totalBudget, 2),
+            'total_expenses' => round($totalExpenses, 2),
         ]);
     }
 }

@@ -10,9 +10,9 @@ use Illuminate\Http\Request;
 class WardrobeController extends Controller
 {
     use FilmPermissionTrait;
-    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'wardrobe.view');
         $items = WardrobeItem::where('film_id', $filmId)
             ->with('scene')
             ->orderBy('created_at', 'desc')
@@ -23,6 +23,7 @@ class WardrobeController extends Controller
 
     public function show(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'wardrobe.view');
         $item = WardrobeItem::where('film_id', $filmId)
             ->with('scene')
             ->findOrFail($id);

@@ -10,9 +10,9 @@ use Illuminate\Http\Request;
 class ContinuityController extends Controller
 {
     use FilmPermissionTrait;
-    use FilmPermissionTrait;
     public function index(Request $request, $filmId)
     {
+        $this->requireCan($request, $filmId, 'continuity.view');
         $records = ContinuityRecord::where('film_id', $filmId)
             ->with(['scene', 'capturedBy'])
             ->orderBy('created_at', 'desc')
@@ -23,6 +23,7 @@ class ContinuityController extends Controller
 
     public function show(Request $request, $filmId, $id)
     {
+        $this->requireCan($request, $filmId, 'continuity.view');
         $record = ContinuityRecord::where('film_id', $filmId)
             ->with(['scene', 'capturedBy'])
             ->findOrFail($id);

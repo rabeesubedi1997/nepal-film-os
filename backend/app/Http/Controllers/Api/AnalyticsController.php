@@ -24,7 +24,10 @@ class AnalyticsController extends Controller
         $totalCastCrew = CastCrew::where('film_id', $filmId)->count();
         $totalCast = CastCrew::where('film_id', $filmId)->where('role_type', 'cast')->count();
         $totalCrew = CastCrew::where('film_id', $filmId)->where('role_type', 'crew')->count();
-        $totalExpenses = Expense::where('film_id', $filmId)->sum('amount');
+        // Only Approved/Paid expenses count as "spent" — Pending and
+        // Rejected amounts were previously being summed in here too,
+        // which inflated every spend/variance figure shown to producers.
+        $totalExpenses = Expense::where('film_id', $filmId)->counted()->sum('amount');
         $totalBudget = Budget::where('film_id', $filmId)->sum('budgeted_amount');
         $pendingExpenses = Expense::where('film_id', $filmId)->where('status', 'Pending')->count();
         $approvedExpenses = Expense::where('film_id', $filmId)->where('status', 'Approved')->count();
@@ -61,7 +64,7 @@ class AnalyticsController extends Controller
 
         $deptActuals = [];
         foreach ($departments as $dept) {
-            $spent = Expense::where('film_id', $filmId)->where('department_id', $dept->department_id)->sum('amount');
+            $spent = Expense::where('film_id', $filmId)->where('department_id', $dept->department_id)->counted()->sum('amount');
             $deptActuals[] = [
                 'department' => $dept->department_id,
                 'budgeted' => round($dept->budgeted, 2),
@@ -111,7 +114,7 @@ class AnalyticsController extends Controller
             : 0;
 
         $budget = Budget::where('film_id', $filmId)->sum('budgeted_amount');
-        $spent = Expense::where('film_id', $filmId)->sum('amount');
+        $spent = Expense::where('film_id', $filmId)->counted()->sum('amount');
         $dailyBurnRate = $completedDays > 0 ? ($spent / $completedDays) : 0;
         $estimatedRemainingCost = round($dailyBurnRate * $estimatedDaysRemaining, 2);
         $projectedTotal = round($spent + $estimatedRemainingCost, 2);

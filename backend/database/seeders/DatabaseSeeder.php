@@ -13,6 +13,20 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // Guard rail: this seeder creates demo accounts with the known
+        // password "password" (including a super admin). It's fine for
+        // local/dev, but `updateOrCreate` means running it against
+        // production would silently reset a real admin's password back
+        // to "password" if that email already existed. Refuse to run in
+        // production unless explicitly forced.
+        if (app()->environment('production') && !env('SEEDER_ALLOW_PRODUCTION_RUN', false)) {
+            $this->command?->error(
+                'Refusing to run DatabaseSeeder in production (it creates accounts with a known, shared password). '
+                . 'Set SEEDER_ALLOW_PRODUCTION_RUN=true in .env if you really intend this.'
+            );
+            return;
+        }
+
         // ── Users ──────────────────────────────────────────────────
         $admin = User::updateOrCreate(
             ['email' => 'admin@nepalfilmos.com'],

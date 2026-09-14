@@ -15,7 +15,9 @@ class Budget extends Model
     ];
 
     protected $casts = [
-        'budgeted_amount' => 'float',
+        // decimal:2, not float — the column is DECIMAL(15,2); casting to
+        // PHP float reintroduces IEEE-754 rounding error for money.
+        'budgeted_amount' => 'decimal:2',
     ];
 
     public function film()

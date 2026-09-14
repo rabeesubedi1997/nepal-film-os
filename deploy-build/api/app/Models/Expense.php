@@ -24,9 +24,22 @@ class Expense extends Model
     ];
 
     protected $casts = [
-        'amount' => 'float',
+        // decimal:2, not float — the column is DECIMAL(15,2); casting to
+        // PHP float reintroduces IEEE-754 rounding error for money.
+        'amount' => 'decimal:2',
         'date' => 'date',
     ];
+
+    /**
+     * Expense statuses that count as actually committed/spent money.
+     * Pending and Rejected must never be summed into "spent" totals.
+     */
+    public const COUNTED_STATUSES = ['Approved', 'Paid'];
+
+    public function scopeCounted($query)
+    {
+        return $query->whereIn('status', self::COUNTED_STATUSES);
+    }
 
     public function film()
     {

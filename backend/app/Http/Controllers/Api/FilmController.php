@@ -385,6 +385,12 @@ class FilmController extends Controller
             return response()->json(['message' => 'Invalid role for this film.'], 422);
         }
 
+        // Only a true Film Admin (or super admin) may invite someone in
+        // directly as Admin — 'film.invite_users' alone is not enough.
+        if ($filmRole->is_admin && !($callerUser->isFilmAdmin() || $request->user()->is_super_admin)) {
+            return response()->json(['message' => 'Only a film admin can invite someone as Admin.'], 403);
+        }
+
         $targetUser = User::where('email', $validated['email'])->first();
 
         if (!$targetUser) {
@@ -507,11 +513,29 @@ class FilmController extends Controller
             'permissions.*' => 'string',
         ]);
 
+        $callerIsAdmin = $callerUser->isFilmAdmin() || $request->user()->is_super_admin;
+
         if (isset($validated['role_id'])) {
             $filmRole = FilmRole::where('id', $validated['role_id'])
                 ->where('film_id', $film->id)
                 ->firstOrFail();
+
+            // Only a true Film Admin (or super admin) may grant the Admin
+            // role to anyone — otherwise a user holding only
+            // 'film.manage_roles' could promote themselves or someone else
+            // to full admin.
+            if ($filmRole->is_admin && !$callerIsAdmin) {
+                return response()->json(['message' => 'Only a film admin can assign the Admin role.'], 403);
+            }
+
             $validated['role'] = $filmRole->name;
+        }
+
+        // A non-admin manager (someone here only via 'film.manage_roles')
+        // must not be able to change their own role/permissions — that's
+        // a straightforward self-escalation path.
+        if (!$callerIsAdmin && (int) $userId === $request->user()->id) {
+            return response()->json(['message' => 'You cannot change your own role.'], 403);
         }
 
         $filmUser->update($validated);
@@ -595,6 +619,12 @@ class FilmController extends Controller
         $filmRole = FilmRole::where('id', $validated['role_id'])
             ->where('film_id', $film->id)
             ->firstOrFail();
+
+        // Only a true Film Admin (or super admin) may add someone directly
+        // as Admin — 'film.invite_users' alone is not enough.
+        if ($filmRole->is_admin && !($callerUser->isFilmAdmin() || $request->user()->is_super_admin)) {
+            return response()->json(['message' => 'Only a film admin can add someone as Admin.'], 403);
+        }
 
         $targetUser = User::where('email', $validated['email'])->first();
 

@@ -15,7 +15,7 @@ export default function SelectFilmView() {
 
   const handleSelect = async (film) => {
     setSelecting(film.id)
-    await selectFilm(film)
+    await selectFilm(film.id)
     navigate('/app/dashboard')
   }
 

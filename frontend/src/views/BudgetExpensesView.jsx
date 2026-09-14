@@ -125,8 +125,13 @@ export default function BudgetExpensesView() {
     try { await expenseService.destroyBudget(filmId, id); fetchData(); addToast('Budget item deleted'); } catch (err) { console.error(err); addToast('Failed to delete budget', 'error'); }
   };
 
+  // Only Approved/Paid expenses are actually "spent" — Pending hasn't
+  // been committed yet and Rejected never will be. Summing every status
+  // here previously inflated every "spent"/variance figure shown below.
+  const isCounted = (e) => e.status === 'Approved' || e.status === 'Paid';
+
   const totalBudget = budgets.reduce((s, b) => s + (b.budgeted_amount || 0), 0);
-  const totalSpent = expenses.reduce((s, e) => s + (e.amount || 0), 0);
+  const totalSpent = expenses.filter(isCounted).reduce((s, e) => s + (e.amount || 0), 0);
   const pendingTotal = expenses.filter(e => e.status === 'Pending').reduce((s, e) => s + (e.amount || 0), 0);
   const budgetPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
 
@@ -143,7 +148,7 @@ export default function BudgetExpensesView() {
     budgets.forEach(b => {
       cats[b.category] = { category: b.category, department: b.department_id, budgeted: b.budgeted_amount || 0, spent: 0 };
     });
-    expenses.forEach(e => {
+    expenses.filter(isCounted).forEach(e => {
       if (cats[e.category]) {
         cats[e.category].spent += e.amount || 0;
       } else {
@@ -273,7 +278,7 @@ export default function BudgetExpensesView() {
             <div className="divide-y divide-slate-800">
               {budgets.length === 0 && <div className="px-5 py-8 text-center text-slate-500 text-sm">No budgets set yet.</div>}
               {budgets.map((b, i) => {
-                const spent = expenses.filter(e => e.department_id === b.department_id).reduce((s, e) => s + (e.amount || 0), 0);
+                const spent = expenses.filter(e => e.department_id === b.department_id && isCounted(e)).reduce((s, e) => s + (e.amount || 0), 0);
                 const pct = b.budgeted_amount > 0 ? Math.round((spent / b.budgeted_amount) * 100) : 0;
                 const barColor = pct > 80 ? 'bg-red-500' : pct > 60 ? 'bg-amber-500' : 'bg-emerald-500';
                 return (
@@ -490,8 +495,12 @@ export default function BudgetExpensesView() {
 
       <Modal open={showBudgetModal} onClose={() => setShowBudgetModal(false)} title={editBudget ? 'Edit Budget' : 'Set Department Budget'}>
         <form onSubmit={saveBudget} className="space-y-4">
-          <Input label="Department" value={formData.department_id} onChange={handleInput} name="department_id" required placeholder="e.g., Camera" />
-          <Input label="Category" value={formData.category} onChange={handleInput} name="category" required placeholder="e.g., Camera Equipment" />
+          {/* Department/Category are locked while editing: the backend matches
+              a budget row by (film, department, category), so changing either
+              here would silently create a brand-new duplicate row instead of
+              updating this one. To rename, delete and re-create the budget. */}
+          <Input label="Department" value={formData.department_id} onChange={handleInput} name="department_id" required placeholder="e.g., Camera" disabled={!!editBudget} />
+          <Input label="Category" value={formData.category} onChange={handleInput} name="category" required placeholder="e.g., Camera Equipment" disabled={!!editBudget} />
           <Input label="Budgeted Amount (NPR)" type="number" value={formData.budgeted_amount} onChange={handleInput} name="budgeted_amount" required />
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" onClick={() => setShowBudgetModal(false)}>Cancel</Button>
